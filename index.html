@@ -68,6 +68,7 @@
       justify-content:space-between;
       gap: 12px;
       margin-bottom: 12px;
+      flex-wrap: wrap;
     }
 
     .ac-card h2{
@@ -555,7 +556,7 @@
         </div>
       </div>
       <div class="ac-help" style="margin-top: 6px;">
-        iOS does not allow a webpage to attach images to an SMS draft automatically. Select photos here to list filenames in the message; attach them manually in Messages.
+        Text Case opens a standard SMS draft with summary text only. Share Case can include selected photos when supported by your device/browser share sheet.
       </div>
       <div id="photoList" class="ac-photo-list"></div>
     </section>
@@ -566,10 +567,11 @@
         <div class="ac-actions">
           <button id="buildPreview" type="button" class="ac-btn ac-btn-primary">Build Preview</button>
           <button id="textCase" type="button" class="ac-btn ac-btn-primary">Text Case</button>
+          <button id="shareCase" type="button" class="ac-btn ac-btn-primary">Share Case</button>
           <button id="copyCase" type="button" class="ac-btn">Copy</button>
         </div>
       </div>
-      <textarea id="preview" class="ac-preview" rows="14"></textarea>
+      <textarea id="preview" class="ac-preview" rows="18"></textarea>
       <div id="status" class="ac-status"></div>
     </section>
   </div>
@@ -589,6 +591,7 @@
       const photosInput = document.getElementById("photos");
       const photoListEl = document.getElementById("photoList");
       let selectedPhotos = [];
+      let selectedPhotoFiles = [];
 
       function setStatus(msg){ statusEl.textContent = msg || ""; }
       function pad2(n){ return String(n).padStart(2,"0"); }
@@ -759,7 +762,8 @@
           try { URL.revokeObjectURL(p.url); } catch(e) {}
         });
 
-        selectedPhotos = Array.from(photosInput.files || []).map(f => ({
+        selectedPhotoFiles = Array.from(photosInput.files || []);
+        selectedPhotos = selectedPhotoFiles.map(f => ({
           name: f.name || "photo.jpg",
           url: URL.createObjectURL(f)
         }));
@@ -773,6 +777,7 @@
         });
 
         selectedPhotos = [];
+        selectedPhotoFiles = [];
         photosInput.value = "";
         renderPhotos();
       });
@@ -864,34 +869,35 @@
         lines.push("Procedure & Timing");
         if(hpIn) lines.push(`HP in: ${hpIn}`);
         if(aquaStart) lines.push(`AQUA Start Time: ${aquaStart}`);
+        if(hpOut) lines.push(`HP Out / FBNC Start: ${hpOut}`);
+        if(cathIn) lines.push(`Catheter In / FBNC End: ${cathIn}`);
 
-        lines.push("Detail Passes:");
+        lines.push("");
+        lines.push("Pass Durations");
         if(detail.length){
           detail.forEach((p, idx) => {
             const a = p.angle ? `, Angle: ${p.angle}` : "";
             const d = p.depth ? `, Depth: ${p.depth}mm` : "";
-            lines.push(`  ${idx + 1}) ${fmtMmSs(p.sec)}${a}${d}`);
+            lines.push(`${idx + 1}) ${fmtMmSs(p.sec)}${a}${d}`);
           });
         } else {
-          lines.push("  (none)");
+          lines.push("(none)");
         }
 
+        lines.push("");
+        lines.push("Totals");
         lines.push(`AQUA Time: ${fmtMmSs(aquaTimeTotal)}`);
-
-        if(hpOut) lines.push(`HP Out / FBNC Start: ${hpOut}`);
-        if(cathIn) lines.push(`Catheter In / FBNC End: ${cathIn}`);
-        if(cauteryType) lines.push(`Cautery Type: ${cauteryType}`);
-
         lines.push(`TRUS to Cath: ${fmtMinAsMmSs(trusToCathMin)}`);
         lines.push(`Resection Time: ${fmtMinAsMmSs(resectionMin)}`);
 
+        if(cauteryType) lines.push(`Cautery Type: ${cauteryType}`);
         if(color) lines.push(`Color: ${color}`);
         if(outOfRoom) lines.push(`Out of Room: ${outOfRoom}`);
 
         if(selectedPhotos.length){
           lines.push("");
-          lines.push("Photos selected (attach manually in Messages):");
-          selectedPhotos.forEach((p, idx) => lines.push(`  ${idx + 1}) ${p.name}`));
+          lines.push("Photos selected");
+          selectedPhotos.forEach((p, idx) => lines.push(`${idx + 1}) ${p.name}`));
         }
 
         if(notes){
@@ -914,6 +920,43 @@
           return true;
         } catch {
           return false;
+        }
+      }
+
+      async function shareCase(summary){
+        if(!navigator.share){
+          setStatus("Native sharing is not supported on this browser. Use Copy or Text Case.");
+          return;
+        }
+
+        try{
+          const shareData = {
+            title: "Case Tracker",
+            text: summary
+          };
+
+          if(selectedPhotoFiles.length && navigator.canShare){
+            const fileShareData = {
+              title: "Case Tracker",
+              text: summary,
+              files: selectedPhotoFiles
+            };
+
+            if(navigator.canShare(fileShareData)){
+              await navigator.share(fileShareData);
+              setStatus("Shared.");
+              return;
+            }
+          }
+
+          await navigator.share(shareData);
+          setStatus("Shared.");
+        } catch (err){
+          if(err && err.name === "AbortError"){
+            setStatus("Share cancelled.");
+          } else {
+            setStatus("Share failed on this device/browser. Use Copy or Text Case.");
+          }
         }
       }
 
@@ -943,6 +986,16 @@
           return;
         }
         openSmsComposer(summary);
+      });
+
+      document.getElementById("shareCase").addEventListener("click", async () => {
+        const summary = buildSummary();
+        previewEl.value = summary;
+        if(!summary.trim()){
+          setStatus("Nothing to share.");
+          return;
+        }
+        await shareCase(summary);
       });
 
       addDetailPassRow("", "", "");
