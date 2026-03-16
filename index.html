@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0b1220">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta charset="UTF-8" />
@@ -25,6 +25,8 @@
       --muted: rgba(255,255,255,.65);
       --line: rgba(255,255,255,.10);
       --shadow: 0 20px 45px rgba(0,0,0,.35);
+      --danger: rgba(255,69,58,.18);
+      --danger-line: rgba(255,69,58,.45);
     }
 
     * { box-sizing: border-box; }
@@ -86,8 +88,17 @@
       gap: 12px;
     }
 
+    .ac-grid-3{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
     @media (max-width: 880px){
-      .ac-grid{ grid-template-columns: 1fr; }
+      .ac-grid,
+      .ac-grid-3{
+        grid-template-columns: 1fr;
+      }
     }
 
     .ac-field{
@@ -171,6 +182,12 @@
       color: white;
     }
 
+    .ac-btn-danger{
+      border-color: var(--danger-line);
+      background: var(--danger);
+      color: white;
+    }
+
     .ac-actions{
       display:flex;
       gap: 10px;
@@ -227,6 +244,7 @@
 
     .ac-pill-purple{ border-color: rgba(191,90,242,.35); }
     .ac-pill-orange{ border-color: rgba(255,159,10,.35); }
+    .ac-pill-green{ border-color: rgba(48,209,88,.35); }
 
     .ac-notes,
     .ac-preview{
@@ -249,6 +267,7 @@
       margin-top: 10px;
       color: var(--muted);
       font-size: 13px;
+      min-height: 18px;
     }
 
     .ac-detail-head{
@@ -330,6 +349,43 @@
 <body>
 
   <div class="ac-page">
+
+    <section class="ac-card">
+      <div class="ac-card-h">
+        <h2>Cases</h2>
+        <div class="ac-metrics-inline">
+          <div class="ac-pill ac-pill-green">
+            <span class="k">Storage</span>
+            <span class="v">Local Auto-Save</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ac-grid-3">
+        <label class="ac-field">
+          <span>Case Name</span>
+          <input id="caseName" type="text" placeholder="Case name">
+        </label>
+
+        <label class="ac-field">
+          <span>Saved Cases</span>
+          <select id="savedCases"></select>
+        </label>
+
+        <div class="ac-field">
+          <span>Actions</span>
+          <div class="ac-actions">
+            <button id="newCase" type="button" class="ac-btn ac-btn-primary">New Case</button>
+            <button id="saveNow" type="button" class="ac-btn">Save Now</button>
+            <button id="deleteCase" type="button" class="ac-btn ac-btn-danger">Delete Case</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ac-help" style="margin-top:10px;">
+        All text, times, selections, notes, and pass rows save automatically on this device. Photos remain session-only and must be reselected after reload.
+      </div>
+    </section>
 
     <section class="ac-card">
       <div class="ac-card-h"><h2>Patient & Setup</h2></div>
@@ -559,7 +615,7 @@
         </div>
       </div>
       <div class="ac-help" style="margin-top: 6px;">
-        Text Case opens a standard SMS draft with summary text only. Share Case can include selected photos when supported by your device/browser share sheet.
+        Text Case opens a standard SMS draft with summary text only. Share Case can include selected photos when supported by your device/browser share sheet. Photos are not saved locally with the case record.
       </div>
       <div id="photoList" class="ac-photo-list"></div>
     </section>
@@ -581,39 +637,79 @@
 
   <script>
     (function(){
+      const STORAGE_KEY = "case-tracker-cases";
+      const ACTIVE_CASE_KEY = "case-tracker-active";
+
       const statusEl = document.getElementById("status");
       const previewEl = document.getElementById("preview");
+      const caseNameEl = document.getElementById("caseName");
+      const savedCasesEl = document.getElementById("savedCases");
+      const detailPassesDiv = document.getElementById("detailPasses");
+      const photoListEl = document.getElementById("photoList");
+      const photosInput = document.getElementById("photos");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
       const resectionLabel = document.getElementById("resectionLabel");
       const calcVolEl = document.getElementById("calcVol");
 
-      const detailPassesDiv = document.getElementById("detailPasses");
-
-      const photosInput = document.getElementById("photos");
-      const photoListEl = document.getElementById("photoList");
       let selectedPhotos = [];
       let selectedPhotoFiles = [];
+      let activeCaseId = null;
+      let suppressAutosave = false;
+      let autosaveTimer = null;
 
-      function setStatus(msg){ statusEl.textContent = msg || ""; }
-      function pad2(n){ return String(n).padStart(2,"0"); }
+      function setStatus(msg){
+        statusEl.textContent = msg || "";
+      }
+
+      function pad2(n){
+        return String(n).padStart(2, "0");
+      }
 
       function nowHHMM(){
         const d = new Date();
         return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
       }
 
-      document.querySelectorAll("[data-now]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-now");
-          const el = document.getElementById(id);
-          if(el){
-            el.value = nowHHMM();
-            recalc();
-          }
-        });
-      });
+      function uid(){
+        return "case-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function defaultCaseName(){
+        const d = new Date();
+        return "Case " +
+          d.getFullYear() + "-" +
+          pad2(d.getMonth() + 1) + "-" +
+          pad2(d.getDate()) + " " +
+          pad2(d.getHours()) + ":" +
+          pad2(d.getMinutes());
+      }
+
+      function getCases(){
+        try{
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function setCases(cases){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+      }
+
+      function getActiveCase(){
+        return localStorage.getItem(ACTIVE_CASE_KEY);
+      }
+
+      function setActiveCase(id){
+        if(id){
+          localStorage.setItem(ACTIVE_CASE_KEY, id);
+        } else {
+          localStorage.removeItem(ACTIVE_CASE_KEY);
+        }
+      }
 
       function parseTimeToMinutes(t){
         if(!t) return null;
@@ -642,7 +738,7 @@
         if(totalSeconds == null) return "00:00";
         const m = Math.floor(totalSeconds / 60);
         const s = totalSeconds % 60;
-        return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
       }
 
       function fmtMinAsMmSs(totalMinutes){
@@ -652,7 +748,6 @@
 
       function computeVolume(){
         const method = document.getElementById("volMethod").value;
-
         const knownTop = Number(document.getElementById("prostateVolumeKnown").value);
         const Lmm = Number(document.getElementById("lenMm").value);
         const Wmm = Number(document.getElementById("widMm").value);
@@ -671,73 +766,18 @@
         const W = Wmm / 10;
         const H = Hmm / 10;
         const factor = method === "Ellipsoid" ? 0.52 : 0.65;
-        const volCc = L * W * H * factor;
-
-        return { volume: volCc, method };
+        return { volume: L * W * H * factor, method };
       }
 
-      function addDetailPassRow(duration="", angle="", depth=""){
-        const row = document.createElement("div");
-        row.className = "ac-detail-row";
-
-        const dur = document.createElement("input");
-        dur.type = "text";
-        dur.placeholder = "MM:SS";
-        dur.value = duration;
-        dur.className = "detailDur";
-        dur.addEventListener("input", recalc);
-
-        const ang = document.createElement("input");
-        ang.type = "text";
-        ang.placeholder = "Angle";
-        ang.value = angle;
-        ang.className = "detailAngle";
-        ang.addEventListener("input", recalc);
-
-        const dep = document.createElement("input");
-        dep.type = "number";
-        dep.placeholder = "Depth (mm)";
-        dep.step = "0.1";
-        dep.min = "0";
-        dep.value = depth;
-        dep.className = "detailDepth";
-        dep.addEventListener("input", recalc);
-
-        const del = document.createElement("button");
-        del.type = "button";
-        del.className = "ac-btn ac-btn-ghost";
-        del.textContent = "Remove";
-        del.addEventListener("click", () => {
-          row.remove();
-          recalc();
+      function clearPhotosOnly(){
+        selectedPhotos.forEach(p => {
+          try { URL.revokeObjectURL(p.url); } catch(e) {}
         });
-
-        row.appendChild(dur);
-        row.appendChild(ang);
-        row.appendChild(dep);
-        row.appendChild(del);
-
-        detailPassesDiv.appendChild(row);
+        selectedPhotos = [];
+        selectedPhotoFiles = [];
+        photosInput.value = "";
+        renderPhotos();
       }
-
-      function getDetailPasses(){
-        return Array.from(document.querySelectorAll(".ac-detail-row"))
-          .map(row => {
-            const dur = row.querySelector(".detailDur")?.value || "";
-            const angle = (row.querySelector(".detailAngle")?.value || "").trim();
-            const depth = row.querySelector(".detailDepth")?.value || "";
-            const sec = parseDurationToSeconds(dur);
-            return { sec, angle, depth };
-          })
-          .filter(x => x.sec != null);
-      }
-
-      document.getElementById("addDetailPass").addEventListener("click", () => addDetailPassRow());
-
-      document.getElementById("clearDetailPasses").addEventListener("click", () => {
-        detailPassesDiv.innerHTML = "";
-        recalc();
-      });
 
       function renderPhotos(){
         photoListEl.innerHTML = "";
@@ -760,42 +800,89 @@
         });
       }
 
-      photosInput.addEventListener("change", () => {
-        selectedPhotos.forEach(p => {
-          try { URL.revokeObjectURL(p.url); } catch(e) {}
+      function addDetailPassRow(duration="", angle="", depth=""){
+        const row = document.createElement("div");
+        row.className = "ac-detail-row";
+
+        const dur = document.createElement("input");
+        dur.type = "text";
+        dur.placeholder = "MM:SS";
+        dur.value = duration;
+        dur.className = "detailDur";
+        dur.addEventListener("input", () => {
+          recalc();
+          scheduleAutosave();
         });
 
-        selectedPhotoFiles = Array.from(photosInput.files || []);
-        selectedPhotos = selectedPhotoFiles.map(f => ({
-          name: f.name || "photo.jpg",
-          url: URL.createObjectURL(f)
+        const ang = document.createElement("input");
+        ang.type = "text";
+        ang.placeholder = "Angle";
+        ang.value = angle;
+        ang.className = "detailAngle";
+        ang.addEventListener("input", scheduleAutosave);
+
+        const dep = document.createElement("input");
+        dep.type = "number";
+        dep.placeholder = "Depth (mm)";
+        dep.step = "0.1";
+        dep.min = "0";
+        dep.value = depth;
+        dep.className = "detailDepth";
+        dep.addEventListener("input", scheduleAutosave);
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "ac-btn ac-btn-ghost";
+        del.textContent = "Remove";
+        del.addEventListener("click", () => {
+          row.remove();
+          if(!detailPassesDiv.children.length){
+            addDetailPassRow("", "", "");
+          }
+          recalc();
+          scheduleAutosave();
+        });
+
+        row.appendChild(dur);
+        row.appendChild(ang);
+        row.appendChild(dep);
+        row.appendChild(del);
+
+        detailPassesDiv.appendChild(row);
+      }
+
+      function getRawDetailPasses(){
+        return Array.from(document.querySelectorAll(".ac-detail-row")).map(row => ({
+          duration: row.querySelector(".detailDur")?.value || "",
+          angle: row.querySelector(".detailAngle")?.value || "",
+          depth: row.querySelector(".detailDepth")?.value || ""
         }));
+      }
 
-        renderPhotos();
-      });
-
-      document.getElementById("clearPhotos").addEventListener("click", () => {
-        selectedPhotos.forEach(p => {
-          try { URL.revokeObjectURL(p.url); } catch(e) {}
-        });
-
-        selectedPhotos = [];
-        selectedPhotoFiles = [];
-        photosInput.value = "";
-        renderPhotos();
-      });
+      function getValidDetailPasses(){
+        return getRawDetailPasses()
+          .map(p => ({
+            sec: parseDurationToSeconds(p.duration),
+            angle: (p.angle || "").trim(),
+            depth: (p.depth || "").trim()
+          }))
+          .filter(x => x.sec != null);
+      }
 
       function recalc(){
-        const detail = getDetailPasses();
-        const aquaTotal = detail.reduce((a,b) => a + b.sec, 0);
+        const detail = getValidDetailPasses();
+        const aquaTotal = detail.reduce((a, b) => a + b.sec, 0);
         aquaTimeLabel.textContent = fmtMmSs(aquaTotal);
 
-        const trusInVal = document.getElementById("trusIn").value;
-        const cathInVal = document.getElementById("cathIn").value;
-        const hpOutVal = document.getElementById("hpOut").value;
+        const trusToCath = diffMinutes(
+          parseTimeToMinutes(document.getElementById("trusIn").value),
+          parseTimeToMinutes(document.getElementById("cathIn").value)
+        );
 
-        const trusToCath = diffMinutes(parseTimeToMinutes(trusInVal), parseTimeToMinutes(cathInVal));
-        const resection = diffMinutes(parseTimeToMinutes(hpOutVal), parseTimeToMinutes(cathInVal));
+        const resection = diffMinutes(
+          parseTimeToMinutes(document.getElementById("hpOut").value),
+          parseTimeToMinutes(document.getElementById("cathIn").value)
+        );
 
         trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
         resectionLabel.textContent = fmtMinAsMmSs(resection);
@@ -804,76 +891,269 @@
         calcVolEl.textContent = (vol.volume != null) ? `${vol.volume.toFixed(1)} cc` : "—";
       }
 
+      function collectFormData(){
+        return {
+          caseName: caseNameEl.value || "",
+          surgeon: document.getElementById("surgeon").value || "",
+          handpieceLot: document.getElementById("handpieceLot").value || "",
+          procedureType: document.getElementById("procedureType").value || "Aquabeam",
+          caseDate: document.getElementById("caseDate").value || "",
+          patientInRoom: document.getElementById("patientInRoom").value || "",
+          prostateVolumeKnown: document.getElementById("prostateVolumeKnown").value || "",
+          prevProcedures: document.getElementById("prevProcedures").value || "NA",
+          anesthesia: document.getElementById("anesthesia").value || "General",
+          trusIn: document.getElementById("trusIn").value || "",
+          ivLobe: document.getElementById("ivLobe").value || "None",
+          lenMm: document.getElementById("lenMm").value || "",
+          widMm: document.getElementById("widMm").value || "",
+          htMm: document.getElementById("htMm").value || "",
+          ippMm: document.getElementById("ippMm").value || "",
+          volMethod: document.getElementById("volMethod").value || "Known",
+          hpIn: document.getElementById("hpIn").value || "",
+          aquaStart: document.getElementById("aquaStart").value || "",
+          hpOut: document.getElementById("hpOut").value || "",
+          cathIn: document.getElementById("cathIn").value || "",
+          cauteryType: document.getElementById("cauteryType").value || "Bipolar",
+          caseColor: document.getElementById("caseColor").value || "Light Pink",
+          outOfRoom: document.getElementById("outOfRoom").value || "",
+          notes: document.getElementById("notes").value || "",
+          detailPasses: getRawDetailPasses()
+        };
+      }
+
+      function applyFormData(data){
+        suppressAutosave = true;
+
+        caseNameEl.value = data.caseName || "";
+        document.getElementById("surgeon").value = data.surgeon || "";
+        document.getElementById("handpieceLot").value = data.handpieceLot || "";
+        document.getElementById("procedureType").value = data.procedureType || "Aquabeam";
+        document.getElementById("caseDate").value = data.caseDate || "";
+        document.getElementById("patientInRoom").value = data.patientInRoom || "";
+        document.getElementById("prostateVolumeKnown").value = data.prostateVolumeKnown || "";
+        document.getElementById("prevProcedures").value = data.prevProcedures || "NA";
+        document.getElementById("anesthesia").value = data.anesthesia || "General";
+        document.getElementById("trusIn").value = data.trusIn || "";
+        document.getElementById("ivLobe").value = data.ivLobe || "None";
+        document.getElementById("lenMm").value = data.lenMm || "";
+        document.getElementById("widMm").value = data.widMm || "";
+        document.getElementById("htMm").value = data.htMm || "";
+        document.getElementById("ippMm").value = data.ippMm || "";
+        document.getElementById("volMethod").value = data.volMethod || "Known";
+        document.getElementById("hpIn").value = data.hpIn || "";
+        document.getElementById("aquaStart").value = data.aquaStart || "";
+        document.getElementById("hpOut").value = data.hpOut || "";
+        document.getElementById("cathIn").value = data.cathIn || "";
+        document.getElementById("cauteryType").value = data.cauteryType || "Bipolar";
+        document.getElementById("caseColor").value = data.caseColor || "Light Pink";
+        document.getElementById("outOfRoom").value = data.outOfRoom || "";
+        document.getElementById("notes").value = data.notes || "";
+
+        detailPassesDiv.innerHTML = "";
+        const passes = Array.isArray(data.detailPasses) && data.detailPasses.length
+          ? data.detailPasses
+          : [{ duration: "", angle: "", depth: "" }];
+
+        passes.forEach(p => addDetailPassRow(p.duration || "", p.angle || "", p.depth || ""));
+
+        clearPhotosOnly();
+        recalc();
+
+        suppressAutosave = false;
+      }
+
+      function refreshCaseList(){
+        const cases = getCases().sort((a, b) => (b.updated || 0) - (a.updated || 0));
+        savedCasesEl.innerHTML = "";
+
+        if(!cases.length){
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "No saved cases";
+          savedCasesEl.appendChild(opt);
+          return;
+        }
+
+        cases.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name || "Untitled Case";
+          if(c.id === activeCaseId){
+            opt.selected = true;
+          }
+          savedCasesEl.appendChild(opt);
+        });
+      }
+
+      function autosave(){
+        if(suppressAutosave) return;
+
+        let cases = getCases();
+        let active = activeCaseId || getActiveCase();
+
+        if(!active){
+          active = uid();
+          activeCaseId = active;
+          setActiveCase(active);
+        }
+
+        const data = collectFormData();
+        const recordName = (data.caseName || "").trim() || defaultCaseName();
+        const idx = cases.findIndex(c => c.id === active);
+
+        if(idx >= 0){
+          cases[idx].data = data;
+          cases[idx].name = recordName;
+          cases[idx].updated = Date.now();
+        } else {
+          cases.push({
+            id: active,
+            name: recordName,
+            updated: Date.now(),
+            data
+          });
+        }
+
+        setCases(cases);
+        setActiveCase(active);
+        activeCaseId = active;
+        refreshCaseList();
+      }
+
+      function scheduleAutosave(){
+        if(suppressAutosave) return;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => {
+          autosave();
+          setStatus("Auto-saved locally.");
+        }, 250);
+      }
+
+      function loadCase(id){
+        const cases = getCases();
+        const found = cases.find(c => c.id === id);
+        if(!found) return;
+
+        activeCaseId = found.id;
+        setActiveCase(found.id);
+        applyFormData(found.data);
+        refreshCaseList();
+        setStatus("Case loaded. Photos need to be reselected.");
+      }
+
+      function createNewCase(){
+        activeCaseId = uid();
+        setActiveCase(activeCaseId);
+
+        const blank = {
+          caseName: defaultCaseName(),
+          surgeon: "",
+          handpieceLot: "",
+          procedureType: "Aquabeam",
+          caseDate: "",
+          patientInRoom: "",
+          prostateVolumeKnown: "",
+          prevProcedures: "NA",
+          anesthesia: "General",
+          trusIn: "",
+          ivLobe: "None",
+          lenMm: "",
+          widMm: "",
+          htMm: "",
+          ippMm: "",
+          volMethod: "Known",
+          hpIn: "",
+          aquaStart: "",
+          hpOut: "",
+          cathIn: "",
+          cauteryType: "Bipolar",
+          caseColor: "Light Pink",
+          outOfRoom: "",
+          notes: "",
+          detailPasses: [{ duration: "", angle: "", depth: "" }]
+        };
+
+        applyFormData(blank);
+        autosave();
+        setStatus("New case created.");
+      }
+
+      function deleteCurrentCase(){
+        const current = activeCaseId || getActiveCase();
+        if(!current){
+          setStatus("No case selected.");
+          return;
+        }
+
+        let cases = getCases();
+        cases = cases.filter(c => c.id !== current);
+        setCases(cases);
+
+        if(cases.length){
+          const next = cases.sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
+          activeCaseId = next.id;
+          setActiveCase(next.id);
+          applyFormData(next.data);
+          refreshCaseList();
+          setStatus("Case deleted.");
+        } else {
+          activeCaseId = null;
+          setActiveCase("");
+          createNewCase();
+          setStatus("Case deleted. New case created.");
+        }
+      }
+
       function buildSummary(){
-        const surgeon = (document.getElementById("surgeon").value || "").trim();
-        const lot = (document.getElementById("handpieceLot").value || "").trim();
+        const data = collectFormData();
+        const detail = getValidDetailPasses();
+        const aquaTimeTotal = detail.reduce((a, b) => a + b.sec, 0);
 
-        const procedureType = document.getElementById("procedureType").value;
-        const caseDate = document.getElementById("caseDate").value;
+        const trusToCathMin = diffMinutes(
+          parseTimeToMinutes(data.trusIn),
+          parseTimeToMinutes(data.cathIn)
+        );
 
-        const patientInRoom = document.getElementById("patientInRoom").value;
-        const prostateKnown = document.getElementById("prostateVolumeKnown").value;
-        const prevProcedures = document.getElementById("prevProcedures").value;
-        const anesthesia = document.getElementById("anesthesia").value;
-
-        const trusIn = document.getElementById("trusIn").value;
-        const ivLobe = document.getElementById("ivLobe").value;
-        const lenMm = document.getElementById("lenMm").value;
-        const widMm = document.getElementById("widMm").value;
-        const htMm = document.getElementById("htMm").value;
-        const ippMm = document.getElementById("ippMm").value;
-
-        const hpIn = document.getElementById("hpIn").value;
-        const aquaStart = document.getElementById("aquaStart").value;
-
-        const hpOut = document.getElementById("hpOut").value;
-        const cathIn = document.getElementById("cathIn").value;
-        const cauteryType = document.getElementById("cauteryType").value;
-        const color = document.getElementById("caseColor").value;
-        const outOfRoom = document.getElementById("outOfRoom").value;
-
-        const notes = (document.getElementById("notes").value || "").trim();
-
-        const detail = getDetailPasses();
-        const aquaTimeTotal = detail.reduce((a,b) => a + b.sec, 0);
-
-        const trusToCathMin = diffMinutes(parseTimeToMinutes(trusIn), parseTimeToMinutes(cathIn));
-        const resectionMin = diffMinutes(parseTimeToMinutes(hpOut), parseTimeToMinutes(cathIn));
+        const resectionMin = diffMinutes(
+          parseTimeToMinutes(data.hpOut),
+          parseTimeToMinutes(data.cathIn)
+        );
 
         const vol = computeVolume();
-
         const lines = [];
+
         lines.push("Case Tracker Case Summary");
-        if(procedureType) lines.push(`Procedure Type: ${procedureType}`);
-        if(caseDate) lines.push(`Date: ${caseDate}`);
+        if((data.caseName || "").trim()) lines.push(`Case Name: ${data.caseName.trim()}`);
+        if(data.procedureType) lines.push(`Procedure Type: ${data.procedureType}`);
+        if(data.caseDate) lines.push(`Date: ${data.caseDate}`);
 
         lines.push("");
         lines.push("Patient & Setup");
-        if(surgeon) lines.push(`Surgeon: ${surgeon}`);
-        if(lot) lines.push(`Handpiece LOT #: ${lot}`);
-        if(patientInRoom) lines.push(`Patient in Room: ${patientInRoom}`);
-        if(prostateKnown) lines.push(`Prostate Volume (Known): ${prostateKnown} cc`);
-        if(prevProcedures) lines.push(`Previous Procedures: ${prevProcedures}`);
-        if(anesthesia) lines.push(`Anesthesia: ${anesthesia}`);
+        if(data.surgeon) lines.push(`Surgeon: ${data.surgeon}`);
+        if(data.handpieceLot) lines.push(`Handpiece LOT #: ${data.handpieceLot}`);
+        if(data.patientInRoom) lines.push(`Patient in Room: ${data.patientInRoom}`);
+        if(data.prostateVolumeKnown) lines.push(`Prostate Volume (Known): ${data.prostateVolumeKnown} cc`);
+        if(data.prevProcedures) lines.push(`Previous Procedures: ${data.prevProcedures}`);
+        if(data.anesthesia) lines.push(`Anesthesia: ${data.anesthesia}`);
 
         lines.push("");
         lines.push("Imaging & Anatomy");
-        if(trusIn) lines.push(`TRUS in: ${trusIn}`);
-        if(ivLobe) lines.push(`Intravesical Lobe: ${ivLobe}`);
-        if(lenMm) lines.push(`L (mm): ${lenMm}`);
-        if(widMm) lines.push(`W (mm): ${widMm}`);
-        if(htMm) lines.push(`H (mm): ${htMm}`);
-        if(ippMm) lines.push(`IPP (mm): ${ippMm}`);
+        if(data.trusIn) lines.push(`TRUS in: ${data.trusIn}`);
+        if(data.ivLobe) lines.push(`Intravesical Lobe: ${data.ivLobe}`);
+        if(data.lenMm) lines.push(`L (mm): ${data.lenMm}`);
+        if(data.widMm) lines.push(`W (mm): ${data.widMm}`);
+        if(data.htMm) lines.push(`H (mm): ${data.htMm}`);
+        if(data.ippMm) lines.push(`IPP (mm): ${data.ippMm}`);
         if(vol.volume != null){
           lines.push(`Prostate Volume (Calc): ${vol.volume.toFixed(1)} cc (${vol.method})`);
         }
 
         lines.push("");
         lines.push("Procedure & Timing");
-        if(hpIn) lines.push(`HP in: ${hpIn}`);
-        if(aquaStart) lines.push(`AQUA Start Time: ${aquaStart}`);
-        if(hpOut) lines.push(`HP Out / FBNC Start: ${hpOut}`);
-        if(cathIn) lines.push(`Catheter In / FBNC End: ${cathIn}`);
+        if(data.hpIn) lines.push(`HP in: ${data.hpIn}`);
+        if(data.aquaStart) lines.push(`AQUA Start Time: ${data.aquaStart}`);
+        if(data.hpOut) lines.push(`HP Out / FBNC Start: ${data.hpOut}`);
+        if(data.cathIn) lines.push(`Catheter In / FBNC End: ${data.cathIn}`);
 
         lines.push("");
         lines.push("Pass Durations");
@@ -893,9 +1173,9 @@
         lines.push(`TRUS to Cath: ${fmtMinAsMmSs(trusToCathMin)}`);
         lines.push(`Resection Time: ${fmtMinAsMmSs(resectionMin)}`);
 
-        if(cauteryType) lines.push(`Cautery Type: ${cauteryType}`);
-        if(color) lines.push(`Color: ${color}`);
-        if(outOfRoom) lines.push(`Out of Room: ${outOfRoom}`);
+        if(data.cauteryType) lines.push(`Cautery Type: ${data.cauteryType}`);
+        if(data.caseColor) lines.push(`Color: ${data.caseColor}`);
+        if(data.outOfRoom) lines.push(`Out of Room: ${data.outOfRoom}`);
 
         if(selectedPhotos.length){
           lines.push("");
@@ -903,10 +1183,10 @@
           selectedPhotos.forEach((p, idx) => lines.push(`${idx + 1}) ${p.name}`));
         }
 
-        if(notes){
+        if(data.notes){
           lines.push("");
           lines.push("Notes");
-          lines.push(notes);
+          lines.push(data.notes);
         }
 
         return lines.join("\n").trim();
@@ -963,9 +1243,78 @@
         }
       }
 
+      document.querySelectorAll("[data-now]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-now");
+          const el = document.getElementById(id);
+          if(el){
+            el.value = nowHHMM();
+            recalc();
+            scheduleAutosave();
+          }
+        });
+      });
+
       document.querySelectorAll("input, select, textarea").forEach(el => {
-        el.addEventListener("input", recalc);
-        el.addEventListener("change", recalc);
+        if(el.id !== "savedCases"){
+          el.addEventListener("input", () => {
+            recalc();
+            scheduleAutosave();
+          });
+          el.addEventListener("change", () => {
+            recalc();
+            scheduleAutosave();
+          });
+        }
+      });
+
+      document.getElementById("addDetailPass").addEventListener("click", () => {
+        addDetailPassRow("", "", "");
+        scheduleAutosave();
+      });
+
+      document.getElementById("clearDetailPasses").addEventListener("click", () => {
+        detailPassesDiv.innerHTML = "";
+        addDetailPassRow("", "", "");
+        recalc();
+        scheduleAutosave();
+      });
+
+      photosInput.addEventListener("change", () => {
+        clearPhotosOnly();
+
+        selectedPhotoFiles = Array.from(photosInput.files || []);
+        selectedPhotos = selectedPhotoFiles.map(f => ({
+          name: f.name || "photo.jpg",
+          url: URL.createObjectURL(f)
+        }));
+
+        renderPhotos();
+        setStatus("Photos selected for this session.");
+      });
+
+      document.getElementById("clearPhotos").addEventListener("click", () => {
+        clearPhotosOnly();
+        setStatus("Photos cleared.");
+      });
+
+      savedCasesEl.addEventListener("change", () => {
+        if(savedCasesEl.value){
+          loadCase(savedCasesEl.value);
+        }
+      });
+
+      document.getElementById("newCase").addEventListener("click", () => {
+        createNewCase();
+      });
+
+      document.getElementById("saveNow").addEventListener("click", () => {
+        autosave();
+        setStatus("Saved locally.");
+      });
+
+      document.getElementById("deleteCase").addEventListener("click", () => {
+        deleteCurrentCase();
       });
 
       document.getElementById("buildPreview").addEventListener("click", () => {
@@ -1001,11 +1350,27 @@
         await shareCase(summary);
       });
 
-      addDetailPassRow("", "", "");
-      recalc();
+      function bootstrap(){
+        const cases = getCases();
+        const current = getActiveCase();
+
+        if(cases.length){
+          const found = cases.find(c => c.id === current) || cases.sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
+          activeCaseId = found.id;
+          setActiveCase(found.id);
+          applyFormData(found.data);
+          refreshCaseList();
+          setStatus("Loaded saved case.");
+        } else {
+          createNewCase();
+        }
+      }
+
+      bootstrap();
     })();
   </script>
-    <script>
+
+  <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker
