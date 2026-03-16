@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Case Tracker</title>
+
+<style>
+
+body{
+font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto;
+background:#f5f5f7;
+margin:0;
+padding:20px;
+}
+
+.container{
+max-width:480px;
+margin:auto;
+}
+
+.card{
+background:white;
+border-radius:14px;
+padding:20px;
+box-shadow:0 6px 20px rgba(0,0,0,.08);
+margin-bottom:20px;
+}
+
+h1{
+margin-top:0;
+font-size:22px;
+}
+
+label{
+font-size:14px;
+font-weight:600;
+display:block;
+margin-top:10px;
+}
+
+input{
+width:100%;
+padding:10px;
+border-radius:8px;
+border:1px solid #ddd;
+margin-top:4px;
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#111;
+color:white;
+font-size:16px;
+margin-top:15px;
+}
+
+.result{
+margin-top:15px;
+font-weight:600;
+}
+
+.copy{
+background:#2e7d32;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Case Tracker</h1>
+
+<label>TRUS In</label>
+<input type="time" id="trus">
+
+<label>Aqua Start</label>
+<input type="time" id="aqua">
+
+<label>Handpiece Out</label>
+<input type="time" id="resection">
+
+<label>Cath In</label>
+<input type="time" id="cath">
+
+<button onclick="calculate()">Calculate</button>
+
+<div class="result" id="result"></div>
+
+<button class="copy" onclick="copyText()">Copy Summary</button>
+
+</div>
+
+</div>
+
+<script>
+
+function minutesBetween(start,end){
+let s=new Date("1970-01-01T"+start+":00")
+let e=new Date("1970-01-01T"+end+":00")
+return Math.round((e-s)/60000)
+}
+
+function calculate(){
+
+let trus=document.getElementById("trus").value
+let aqua=document.getElementById("aqua").value
+let resection=document.getElementById("resection").value
+let cath=document.getElementById("cath").value
+
+if(!trus || !cath){
+alert("Enter required times")
+return
+}
+
+let trusCath=minutesBetween(trus,cath)
+
+let aquaTime=""
+if(aqua && resection){
+aquaTime=minutesBetween(aqua,resection)
+}
+
+let text="TRUS → Cath: "+trusCath+" min"
+
+if(aquaTime){
+text+=" | AquaTime: "+aquaTime+" min"
+}
+
+document.getElementById("result").innerText=text
+
+window.summary=text
+
+}
+
+function copyText(){
+
+if(!window.summary){
+alert("Calculate first")
+return
+}
+
+navigator.clipboard.writeText(window.summary)
+
+alert("Copied")
+
+}
+
+</script>
+
+</body>
+</html>
