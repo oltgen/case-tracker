@@ -1,161 +1,981 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Case Tracker</title>
+  <meta
+    name="description"
+    content="Mobile-first surgical case tracking web app for timing, prostate volume, and case summary output."
+  />
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg1: #0b1220;
+      --bg2: #101827;
+      --card: rgba(18,20,28,.78);
+      --card2: rgba(18,20,28,.62);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --line: rgba(255,255,255,.10);
+      --shadow: 0 20px 45px rgba(0,0,0,.35);
+    }
 
-<title>Case Tracker</title>
+    * { box-sizing: border-box; }
 
-<style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(10,132,255,.16), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(191,90,242,.14), transparent 28%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
 
-body{
-font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto;
-background:#f5f5f7;
-margin:0;
-padding:20px;
-}
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-.container{
-max-width:480px;
-margin:auto;
-}
+    .ac-page{
+      width: 100%;
+      padding: 28px 14px 48px;
+      color: var(--text);
+      max-width: 1180px;
+      margin: 0 auto;
+    }
 
-.card{
-background:white;
-border-radius:14px;
-padding:20px;
-box-shadow:0 6px 20px rgba(0,0,0,.08);
-margin-bottom:20px;
-}
+    .ac-header{ margin-bottom: 18px; }
 
-h1{
-margin-top:0;
-font-size:22px;
-}
+    .ac-badge{
+      display:inline-flex;
+      align-items:center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      margin-bottom: 10px;
+    }
 
-label{
-font-size:14px;
-font-weight:600;
-display:block;
-margin-top:10px;
-}
+    .ac-title{
+      margin: 0;
+      font-size: clamp(28px, 3.2vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
 
-input{
-width:100%;
-padding:10px;
-border-radius:8px;
-border:1px solid #ddd;
-margin-top:4px;
-}
+    .ac-subtitle{
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 70ch;
+    }
 
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-background:#111;
-color:white;
-font-size:16px;
-margin-top:15px;
-}
+    .ac-card{
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      margin-top: 14px;
+    }
 
-.result{
-margin-top:15px;
-font-weight:600;
-}
+    .ac-card-h{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
 
-.copy{
-background:#2e7d32;
-}
+    .ac-card h2{
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
 
-</style>
+    .ac-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
 
+    @media (max-width: 880px){
+      .ac-grid{ grid-template-columns: 1fr; }
+    }
+
+    .ac-field{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+
+    .ac-field > span{
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .ac-help{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    input, select, textarea, button{
+      font: inherit;
+    }
+
+    .ac-field input,
+    .ac-field select{
+      width: 100%;
+      box-sizing:border-box;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.28);
+      color: var(--text);
+      outline: none;
+    }
+
+    .ac-field input:focus,
+    .ac-field select:focus,
+    .ac-notes:focus,
+    .ac-preview:focus,
+    .ac-detail-row input:focus{
+      border-color: rgba(10,132,255,.65);
+      box-shadow: 0 0 0 4px rgba(10,132,255,.18);
+    }
+
+    .ac-time-row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+
+    .ac-now{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(10,132,255,.45);
+      background: rgba(10,132,255,.18);
+      color: rgba(255,255,255,.95);
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .ac-btn{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor:pointer;
+    }
+
+    .ac-btn-ghost{ background: transparent; }
+
+    .ac-btn-primary{
+      border-color: rgba(10,132,255,.55);
+      background: rgba(10,132,255,.90);
+      color: white;
+    }
+
+    .ac-actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
+
+    .ac-metric{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(0,0,0,.22);
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+
+    .ac-metric-k{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .ac-metric-v{
+      font-size: 18px;
+      font-weight: 650;
+    }
+
+    .ac-metrics-inline{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .ac-pill{
+      display:flex;
+      gap: 8px;
+      align-items:baseline;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      white-space:nowrap;
+    }
+
+    .ac-pill .k{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .ac-pill .v{
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .ac-pill-purple{ border-color: rgba(191,90,242,.35); }
+    .ac-pill-orange{ border-color: rgba(255,159,10,.35); }
+
+    .ac-notes,
+    .ac-preview{
+      width:100%;
+      box-sizing:border-box;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.28);
+      color: var(--text);
+      resize: vertical;
+    }
+
+    .ac-preview{
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      margin-top: 10px;
+    }
+
+    .ac-status{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ac-detail-head{
+      display:grid;
+      grid-template-columns: 160px 140px 160px 90px;
+      gap: 10px;
+      padding: 8px 2px;
+      color: rgba(255,255,255,.65);
+      font-size: 12px;
+    }
+
+    .ac-detail-list{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .ac-detail-row{
+      display:grid;
+      grid-template-columns: 160px 140px 160px 90px;
+      gap: 10px;
+      align-items:center;
+    }
+
+    .ac-detail-row input{
+      width:100%;
+      box-sizing:border-box;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.28);
+      color: var(--text);
+      outline: none;
+    }
+
+    @media (max-width: 880px){
+      .ac-detail-head{ display:none; }
+      .ac-detail-row{ grid-template-columns: 1fr; }
+    }
+
+    .ac-photo-list{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 880px){
+      .ac-photo-list{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .ac-photo-item{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(0,0,0,.22);
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+
+    .ac-thumb{
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.25);
+    }
+
+    .ac-fn{
+      font-size: 12px;
+      color: rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="container">
+  <div class="ac-page">
+    <header class="ac-header">
+      <div class="ac-badge">Case Tracker</div>
+      <h1 class="ac-title">Case Tracker (Web) — No Save</h1>
+      <p class="ac-subtitle">
+        Enter case data, then tap <b>Text Case</b> to open Messages with a prefilled summary (no PHI). Data will not be saved.
+      </p>
+    </header>
 
-<div class="card">
+    <section class="ac-card">
+      <div class="ac-card-h"><h2>Patient & Setup</h2></div>
+      <div class="ac-grid">
+        <label class="ac-field">
+          <span>Surgeon</span>
+          <input id="surgeon" type="text" placeholder="Surgeon (no patient name)">
+        </label>
 
-<h1>Case Tracker</h1>
+        <label class="ac-field">
+          <span>Handpiece LOT #</span>
+          <input id="handpieceLot" type="text" placeholder="LOT #">
+        </label>
 
-<label>TRUS In</label>
-<input type="time" id="trus">
+        <label class="ac-field">
+          <span>Procedure Type</span>
+          <select id="procedureType">
+            <option value="Aquabeam">Aquabeam</option>
+            <option value="Hydros">Hydros</option>
+          </select>
+        </label>
 
-<label>Aqua Start</label>
-<input type="time" id="aqua">
+        <label class="ac-field">
+          <span>Date</span>
+          <input id="caseDate" type="date">
+        </label>
 
-<label>Handpiece Out</label>
-<input type="time" id="resection">
+        <div class="ac-field ac-time">
+          <span>Patient in Room</span>
+          <div class="ac-time-row">
+            <input id="patientInRoom" type="time">
+            <button class="ac-now" type="button" data-now="patientInRoom">Now</button>
+          </div>
+        </div>
 
-<label>Cath In</label>
-<input type="time" id="cath">
+        <label class="ac-field">
+          <span>Prostate Volume (Known, cc)</span>
+          <input id="prostateVolumeKnown" type="number" step="0.1" min="0" placeholder="Optional">
+        </label>
 
-<button onclick="calculate()">Calculate</button>
+        <label class="ac-field">
+          <span>Previous Procedures</span>
+          <select id="prevProcedures">
+            <option value="NA" selected>NA</option>
+            <option value="Greenlight">Greenlight</option>
+            <option value="iTIND">iTIND</option>
+            <option value="Optilume">Optilume</option>
+            <option value="Rezum">Rezum</option>
+            <option value="TURP">TURP</option>
+            <option value="Urolift">Urolift</option>
+            <option value="Other Non-Resective">Other Non-Resective</option>
+            <option value="Other Resective">Other Resective</option>
+          </select>
+        </label>
 
-<div class="result" id="result"></div>
+        <label class="ac-field">
+          <span>Anesthesia</span>
+          <select id="anesthesia">
+            <option value="General" selected>General</option>
+            <option value="Spinal">Spinal</option>
+          </select>
+        </label>
+      </div>
+    </section>
 
-<button class="copy" onclick="copyText()">Copy Summary</button>
+    <section class="ac-card">
+      <div class="ac-card-h"><h2>Imaging & Anatomy</h2></div>
+      <div class="ac-grid">
+        <div class="ac-field ac-time">
+          <span>TRUS in</span>
+          <div class="ac-time-row">
+            <input id="trusIn" type="time">
+            <button class="ac-now" type="button" data-now="trusIn">Now</button>
+          </div>
+        </div>
 
-</div>
+        <label class="ac-field">
+          <span>Intravesical Lobe</span>
+          <select id="ivLobe">
+            <option value="None" selected>None</option>
+            <option value="Middle">Middle</option>
+            <option value="Tri-Lobe">Tri-Lobe</option>
+            <option value="Lateral Lobe">Lateral Lobe</option>
+          </select>
+        </label>
 
-</div>
+        <label class="ac-field">
+          <span>L (mm)</span>
+          <input id="lenMm" type="number" step="0.1" min="0" placeholder="L in mm">
+        </label>
 
-<script>
+        <label class="ac-field">
+          <span>W (mm)</span>
+          <input id="widMm" type="number" step="0.1" min="0" placeholder="W in mm">
+        </label>
 
-function minutesBetween(start,end){
-let s=new Date("1970-01-01T"+start+":00")
-let e=new Date("1970-01-01T"+end+":00")
-return Math.round((e-s)/60000)
-}
+        <label class="ac-field">
+          <span>H (mm)</span>
+          <input id="htMm" type="number" step="0.1" min="0" placeholder="H in mm">
+        </label>
 
-function calculate(){
+        <label class="ac-field">
+          <span>IPP (mm)</span>
+          <input id="ippMm" type="number" step="0.1" min="0" placeholder="IPP in mm">
+        </label>
 
-let trus=document.getElementById("trus").value
-let aqua=document.getElementById("aqua").value
-let resection=document.getElementById("resection").value
-let cath=document.getElementById("cath").value
+        <label class="ac-field">
+          <span>Prostate Volume Method</span>
+          <select id="volMethod">
+            <option value="Known" selected>Known</option>
+            <option value="Ellipsoid">Ellipsoid (L×W×H×0.52)</option>
+            <option value="Bullet">Bullet (L×W×H×0.65)</option>
+          </select>
+        </label>
 
-if(!trus || !cath){
-alert("Enter required times")
-return
-}
+        <div class="ac-metric">
+          <div class="ac-metric-k">Calculated Volume</div>
+          <div class="ac-metric-v" id="calcVol">—</div>
+        </div>
+      </div>
+    </section>
 
-let trusCath=minutesBetween(trus,cath)
+    <section class="ac-card">
+      <div class="ac-card-h">
+        <h2>Procedure & Timing</h2>
+        <div class="ac-metrics-inline">
+          <div class="ac-pill"><span class="k">AQUA Time</span><span class="v" id="aquaTimeLabel">00:00</span></div>
+          <div class="ac-pill ac-pill-purple"><span class="k">TRUS → Cath</span><span class="v" id="trusCathLabel">00:00</span></div>
+          <div class="ac-pill ac-pill-orange"><span class="k">Resection</span><span class="v" id="resectionLabel">00:00</span></div>
+        </div>
+      </div>
 
-let aquaTime=""
-if(aqua && resection){
-aquaTime=minutesBetween(aqua,resection)
-}
+      <div class="ac-grid">
+        <div class="ac-field ac-time">
+          <span>HP in</span>
+          <div class="ac-time-row">
+            <input id="hpIn" type="time">
+            <button class="ac-now" type="button" data-now="hpIn">Now</button>
+          </div>
+        </div>
 
-let text="TRUS → Cath: "+trusCath+" min"
+        <div class="ac-field ac-time">
+          <span>AQUA Start Time</span>
+          <div class="ac-time-row">
+            <input id="aquaStart" type="time">
+            <button class="ac-now" type="button" data-now="aquaStart">Now</button>
+          </div>
+        </div>
 
-if(aquaTime){
-text+=" | AquaTime: "+aquaTime+" min"
-}
+        <div class="ac-field" style="grid-column: 1 / -1;">
+          <span>Detail Passes</span>
+          <div class="ac-help">Duration counts toward AQUA Time. Angle and Depth are optional.</div>
 
-document.getElementById("result").innerText=text
+          <div class="ac-detail-head">
+            <div>Duration (MM:SS)</div>
+            <div>Angle</div>
+            <div>Depth (mm)</div>
+            <div></div>
+          </div>
 
-window.summary=text
+          <div id="detailPasses" class="ac-detail-list"></div>
 
-}
+          <div class="ac-actions" style="margin-top:10px;">
+            <button id="addDetailPass" type="button" class="ac-btn">+ Add Detail Pass</button>
+            <button id="clearDetailPasses" type="button" class="ac-btn ac-btn-ghost">Clear</button>
+          </div>
+        </div>
 
-function copyText(){
+        <div class="ac-field ac-time">
+          <span>HP Out / FBNC Start</span>
+          <div class="ac-time-row">
+            <input id="hpOut" type="time">
+            <button class="ac-now" type="button" data-now="hpOut">Now</button>
+          </div>
+        </div>
 
-if(!window.summary){
-alert("Calculate first")
-return
-}
+        <div class="ac-field ac-time">
+          <span>Catheter In / FBNC End</span>
+          <div class="ac-time-row">
+            <input id="cathIn" type="time">
+            <button class="ac-now" type="button" data-now="cathIn">Now</button>
+          </div>
+        </div>
 
-navigator.clipboard.writeText(window.summary)
+        <label class="ac-field">
+          <span>Cautery Type</span>
+          <select id="cauteryType">
+            <option value="Bipolar" selected>Bipolar</option>
+            <option value="Monopolar">Monopolar</option>
+          </select>
+        </label>
 
-alert("Copied")
+        <label class="ac-field">
+          <span>Color</span>
+          <select id="caseColor">
+            <option value="Clear">Clear</option>
+            <option value="Light Pink" selected>Light Pink</option>
+            <option value="Pink">Pink</option>
+            <option value="Red">Red</option>
+          </select>
+        </label>
 
-}
+        <div class="ac-field ac-time">
+          <span>Out of Room</span>
+          <div class="ac-time-row">
+            <input id="outOfRoom" type="time">
+            <button class="ac-now" type="button" data-now="outOfRoom">Now</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-</script>
+    <section class="ac-card">
+      <div class="ac-card-h"><h2>Notes</h2></div>
+      <textarea id="notes" class="ac-notes" rows="5" placeholder="Optional notes (no PHI)"></textarea>
+    </section>
 
+    <section class="ac-card">
+      <div class="ac-card-h">
+        <h2>Photos</h2>
+        <div class="ac-actions">
+          <label class="ac-btn" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+            Add / Take Photos
+            <input id="photos" type="file" accept="image/*" capture="environment" multiple style="display:none;">
+          </label>
+          <button id="clearPhotos" type="button" class="ac-btn ac-btn-ghost">Clear</button>
+        </div>
+      </div>
+      <div class="ac-help" style="margin-top: 6px;">
+        iOS does not allow a webpage to attach images to an SMS draft automatically. Select photos here to list filenames in the message; attach them manually in Messages.
+      </div>
+      <div id="photoList" class="ac-photo-list"></div>
+    </section>
+
+    <section class="ac-card">
+      <div class="ac-card-h">
+        <h2>Preview</h2>
+        <div class="ac-actions">
+          <button id="buildPreview" type="button" class="ac-btn ac-btn-primary">Build Preview</button>
+          <button id="textCase" type="button" class="ac-btn ac-btn-primary">Text Case</button>
+          <button id="copyCase" type="button" class="ac-btn">Copy</button>
+        </div>
+      </div>
+      <textarea id="preview" class="ac-preview" rows="14"></textarea>
+      <div id="status" class="ac-status"></div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      const statusEl = document.getElementById("status");
+      const previewEl = document.getElementById("preview");
+
+      const aquaTimeLabel = document.getElementById("aquaTimeLabel");
+      const trusCathLabel = document.getElementById("trusCathLabel");
+      const resectionLabel = document.getElementById("resectionLabel");
+      const calcVolEl = document.getElementById("calcVol");
+
+      const detailPassesDiv = document.getElementById("detailPasses");
+
+      const photosInput = document.getElementById("photos");
+      const photoListEl = document.getElementById("photoList");
+      let selectedPhotos = [];
+
+      function setStatus(msg){ statusEl.textContent = msg || ""; }
+      function pad2(n){ return String(n).padStart(2,"0"); }
+
+      function nowHHMM(){
+        const d = new Date();
+        return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+      }
+
+      document.querySelectorAll("[data-now]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-now");
+          const el = document.getElementById(id);
+          if(el){
+            el.value = nowHHMM();
+            recalc();
+          }
+        });
+      });
+
+      function parseTimeToMinutes(t){
+        if(!t) return null;
+        const parts = t.split(":").map(Number);
+        if(parts.length < 2) return null;
+        const hh = parts[0], mm = parts[1];
+        if(Number.isNaN(hh) || Number.isNaN(mm)) return null;
+        return hh * 60 + mm;
+      }
+
+      function diffMinutes(start, end){
+        if(start == null || end == null) return null;
+        let d = end - start;
+        if(d < 0) d += 24 * 60;
+        return d;
+      }
+
+      function parseDurationToSeconds(s){
+        if(!s) return null;
+        const m = s.trim().match(/^(\d{1,3}):([0-5]\d)$/);
+        if(!m) return null;
+        return Number(m[1]) * 60 + Number(m[2]);
+      }
+
+      function fmtMmSs(totalSeconds){
+        if(totalSeconds == null) return "00:00";
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+      }
+
+      function fmtMinAsMmSs(totalMinutes){
+        if(totalMinutes == null) return "00:00";
+        return fmtMmSs(Math.round(totalMinutes * 60));
+      }
+
+      function computeVolume(){
+        const method = document.getElementById("volMethod").value;
+
+        const knownTop = Number(document.getElementById("prostateVolumeKnown").value);
+        const Lmm = Number(document.getElementById("lenMm").value);
+        const Wmm = Number(document.getElementById("widMm").value);
+        const Hmm = Number(document.getElementById("htMm").value);
+
+        if(method === "Known"){
+          if(Number.isFinite(knownTop) && knownTop > 0) return { volume: knownTop, method };
+          return { volume: null, method };
+        }
+
+        if(!Number.isFinite(Lmm) || !Number.isFinite(Wmm) || !Number.isFinite(Hmm) || Lmm <= 0 || Wmm <= 0 || Hmm <= 0){
+          return { volume: null, method };
+        }
+
+        const L = Lmm / 10;
+        const W = Wmm / 10;
+        const H = Hmm / 10;
+        const factor = method === "Ellipsoid" ? 0.52 : 0.65;
+        const volCc = L * W * H * factor;
+
+        return { volume: volCc, method };
+      }
+
+      function addDetailPassRow(duration="", angle="", depth=""){
+        const row = document.createElement("div");
+        row.className = "ac-detail-row";
+
+        const dur = document.createElement("input");
+        dur.type = "text";
+        dur.placeholder = "MM:SS";
+        dur.value = duration;
+        dur.className = "detailDur";
+        dur.addEventListener("input", recalc);
+
+        const ang = document.createElement("input");
+        ang.type = "text";
+        ang.placeholder = "Angle";
+        ang.value = angle;
+        ang.className = "detailAngle";
+        ang.addEventListener("input", recalc);
+
+        const dep = document.createElement("input");
+        dep.type = "number";
+        dep.placeholder = "Depth (mm)";
+        dep.step = "0.1";
+        dep.min = "0";
+        dep.value = depth;
+        dep.className = "detailDepth";
+        dep.addEventListener("input", recalc);
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "ac-btn ac-btn-ghost";
+        del.textContent = "Remove";
+        del.addEventListener("click", () => {
+          row.remove();
+          recalc();
+        });
+
+        row.appendChild(dur);
+        row.appendChild(ang);
+        row.appendChild(dep);
+        row.appendChild(del);
+
+        detailPassesDiv.appendChild(row);
+      }
+
+      function getDetailPasses(){
+        return Array.from(document.querySelectorAll(".ac-detail-row"))
+          .map(row => {
+            const dur = row.querySelector(".detailDur")?.value || "";
+            const angle = (row.querySelector(".detailAngle")?.value || "").trim();
+            const depth = row.querySelector(".detailDepth")?.value || "";
+            const sec = parseDurationToSeconds(dur);
+            return { sec, angle, depth };
+          })
+          .filter(x => x.sec != null);
+      }
+
+      document.getElementById("addDetailPass").addEventListener("click", () => addDetailPassRow());
+
+      document.getElementById("clearDetailPasses").addEventListener("click", () => {
+        detailPassesDiv.innerHTML = "";
+        recalc();
+      });
+
+      function renderPhotos(){
+        photoListEl.innerHTML = "";
+        selectedPhotos.forEach((p) => {
+          const item = document.createElement("div");
+          item.className = "ac-photo-item";
+
+          const img = document.createElement("img");
+          img.className = "ac-thumb";
+          img.src = p.url;
+          img.alt = "Selected photo";
+
+          const fn = document.createElement("div");
+          fn.className = "ac-fn";
+          fn.textContent = p.name;
+
+          item.appendChild(img);
+          item.appendChild(fn);
+          photoListEl.appendChild(item);
+        });
+      }
+
+      photosInput.addEventListener("change", () => {
+        selectedPhotos.forEach(p => {
+          try { URL.revokeObjectURL(p.url); } catch(e) {}
+        });
+
+        selectedPhotos = Array.from(photosInput.files || []).map(f => ({
+          name: f.name || "photo.jpg",
+          url: URL.createObjectURL(f)
+        }));
+
+        renderPhotos();
+      });
+
+      document.getElementById("clearPhotos").addEventListener("click", () => {
+        selectedPhotos.forEach(p => {
+          try { URL.revokeObjectURL(p.url); } catch(e) {}
+        });
+
+        selectedPhotos = [];
+        photosInput.value = "";
+        renderPhotos();
+      });
+
+      function recalc(){
+        const detail = getDetailPasses();
+        const aquaTotal = detail.reduce((a,b) => a + b.sec, 0);
+        aquaTimeLabel.textContent = fmtMmSs(aquaTotal);
+
+        const trusInVal = document.getElementById("trusIn").value;
+        const cathInVal = document.getElementById("cathIn").value;
+        const hpOutVal = document.getElementById("hpOut").value;
+
+        const trusToCath = diffMinutes(parseTimeToMinutes(trusInVal), parseTimeToMinutes(cathInVal));
+        const resection = diffMinutes(parseTimeToMinutes(hpOutVal), parseTimeToMinutes(cathInVal));
+
+        trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
+        resectionLabel.textContent = fmtMinAsMmSs(resection);
+
+        const vol = computeVolume();
+        calcVolEl.textContent = (vol.volume != null) ? `${vol.volume.toFixed(1)} cc` : "—";
+      }
+
+      function buildSummary(){
+        const surgeon = (document.getElementById("surgeon").value || "").trim();
+        const lot = (document.getElementById("handpieceLot").value || "").trim();
+
+        const procedureType = document.getElementById("procedureType").value;
+        const caseDate = document.getElementById("caseDate").value;
+
+        const patientInRoom = document.getElementById("patientInRoom").value;
+        const prostateKnown = document.getElementById("prostateVolumeKnown").value;
+        const prevProcedures = document.getElementById("prevProcedures").value;
+        const anesthesia = document.getElementById("anesthesia").value;
+
+        const trusIn = document.getElementById("trusIn").value;
+        const ivLobe = document.getElementById("ivLobe").value;
+        const lenMm = document.getElementById("lenMm").value;
+        const widMm = document.getElementById("widMm").value;
+        const htMm = document.getElementById("htMm").value;
+        const ippMm = document.getElementById("ippMm").value;
+
+        const hpIn = document.getElementById("hpIn").value;
+        const aquaStart = document.getElementById("aquaStart").value;
+
+        const hpOut = document.getElementById("hpOut").value;
+        const cathIn = document.getElementById("cathIn").value;
+        const cauteryType = document.getElementById("cauteryType").value;
+        const color = document.getElementById("caseColor").value;
+        const outOfRoom = document.getElementById("outOfRoom").value;
+
+        const notes = (document.getElementById("notes").value || "").trim();
+
+        const detail = getDetailPasses();
+        const aquaTimeTotal = detail.reduce((a,b) => a + b.sec, 0);
+
+        const trusToCathMin = diffMinutes(parseTimeToMinutes(trusIn), parseTimeToMinutes(cathIn));
+        const resectionMin = diffMinutes(parseTimeToMinutes(hpOut), parseTimeToMinutes(cathIn));
+
+        const vol = computeVolume();
+
+        const lines = [];
+        lines.push("Case Tracker Case Summary");
+        if(procedureType) lines.push(`Procedure Type: ${procedureType}`);
+        if(caseDate) lines.push(`Date: ${caseDate}`);
+
+        lines.push("");
+        lines.push("Patient & Setup");
+        if(surgeon) lines.push(`Surgeon: ${surgeon}`);
+        if(lot) lines.push(`Handpiece LOT #: ${lot}`);
+        if(patientInRoom) lines.push(`Patient in Room: ${patientInRoom}`);
+        if(prostateKnown) lines.push(`Prostate Volume (Known): ${prostateKnown} cc`);
+        if(prevProcedures) lines.push(`Previous Procedures: ${prevProcedures}`);
+        if(anesthesia) lines.push(`Anesthesia: ${anesthesia}`);
+
+        lines.push("");
+        lines.push("Imaging & Anatomy");
+        if(trusIn) lines.push(`TRUS in: ${trusIn}`);
+        if(ivLobe) lines.push(`Intravesical Lobe: ${ivLobe}`);
+        if(lenMm) lines.push(`L (mm): ${lenMm}`);
+        if(widMm) lines.push(`W (mm): ${widMm}`);
+        if(htMm) lines.push(`H (mm): ${htMm}`);
+        if(ippMm) lines.push(`IPP (mm): ${ippMm}`);
+        if(vol.volume != null){
+          lines.push(`Prostate Volume (Calc): ${vol.volume.toFixed(1)} cc (${vol.method})`);
+        }
+
+        lines.push("");
+        lines.push("Procedure & Timing");
+        if(hpIn) lines.push(`HP in: ${hpIn}`);
+        if(aquaStart) lines.push(`AQUA Start Time: ${aquaStart}`);
+
+        lines.push("Detail Passes:");
+        if(detail.length){
+          detail.forEach((p, idx) => {
+            const a = p.angle ? `, Angle: ${p.angle}` : "";
+            const d = p.depth ? `, Depth: ${p.depth}mm` : "";
+            lines.push(`  ${idx + 1}) ${fmtMmSs(p.sec)}${a}${d}`);
+          });
+        } else {
+          lines.push("  (none)");
+        }
+
+        lines.push(`AQUA Time: ${fmtMmSs(aquaTimeTotal)}`);
+
+        if(hpOut) lines.push(`HP Out / FBNC Start: ${hpOut}`);
+        if(cathIn) lines.push(`Catheter In / FBNC End: ${cathIn}`);
+        if(cauteryType) lines.push(`Cautery Type: ${cauteryType}`);
+
+        lines.push(`TRUS to Cath: ${fmtMinAsMmSs(trusToCathMin)}`);
+        lines.push(`Resection Time: ${fmtMinAsMmSs(resectionMin)}`);
+
+        if(color) lines.push(`Color: ${color}`);
+        if(outOfRoom) lines.push(`Out of Room: ${outOfRoom}`);
+
+        if(selectedPhotos.length){
+          lines.push("");
+          lines.push("Photos selected (attach manually in Messages):");
+          selectedPhotos.forEach((p, idx) => lines.push(`  ${idx + 1}) ${p.name}`));
+        }
+
+        if(notes){
+          lines.push("");
+          lines.push("Notes");
+          lines.push(notes);
+        }
+
+        return lines.join("\n").trim();
+      }
+
+      function openSmsComposer(bodyText){
+        const encoded = encodeURIComponent(bodyText);
+        window.location.href = `sms:&body=${encoded}`;
+      }
+
+      async function copyText(text){
+        try{
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      document.querySelectorAll("input, select, textarea").forEach(el => {
+        el.addEventListener("input", recalc);
+        el.addEventListener("change", recalc);
+      });
+
+      document.getElementById("buildPreview").addEventListener("click", () => {
+        const summary = buildSummary();
+        previewEl.value = summary;
+        setStatus("Preview built.");
+      });
+
+      document.getElementById("copyCase").addEventListener("click", async () => {
+        const summary = buildSummary();
+        previewEl.value = summary;
+        const ok = await copyText(summary);
+        setStatus(ok ? "Copied." : "Copy blocked by browser. Manually copy from the preview box.");
+      });
+
+      document.getElementById("textCase").addEventListener("click", () => {
+        const summary = buildSummary();
+        previewEl.value = summary;
+        if(!summary.trim()){
+          setStatus("Nothing to send.");
+          return;
+        }
+        openSmsComposer(summary);
+      });
+
+      addDetailPassRow("", "", "");
+      recalc();
+    })();
+  </script>
 </body>
 </html>
