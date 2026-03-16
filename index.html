@@ -67,6 +67,10 @@
       margin-top: 14px;
     }
 
+    .ac-native-card{
+      scroll-margin-top: 12px;
+    }
+
     .ac-card-h{
       display:flex;
       align-items:flex-start;
@@ -163,6 +167,8 @@
       cursor:pointer;
       user-select:none;
       flex-shrink: 0;
+      transition: transform .08s ease, background .18s ease, box-shadow .18s ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .ac-btn{
@@ -172,6 +178,13 @@
       background: rgba(255,255,255,.06);
       color: var(--text);
       cursor:pointer;
+      transition: transform .08s ease, background .18s ease, box-shadow .18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ac-btn:active,
+    .ac-now:active{
+      transform: scale(.97);
     }
 
     .ac-btn-ghost{ background: transparent; }
@@ -344,13 +357,59 @@
       color: rgba(255,255,255,.75);
       word-break: break-word;
     }
+
+    .ac-fab-status{
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(18,20,28,.88);
+      color: rgba(255,255,255,.96);
+      box-shadow: 0 12px 28px rgba(0,0,0,.32);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease, background .22s ease, border-color .22s ease;
+      z-index: 9999;
+    }
+
+    .ac-fab-status.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .ac-fab-status.success{
+      border-color: rgba(48,209,88,.35);
+      background: rgba(24,52,34,.92);
+    }
+
+    .ac-fab-status.info{
+      border-color: rgba(10,132,255,.35);
+      background: rgba(18,32,54,.92);
+    }
+
+    .ac-fab-status.warn{
+      border-color: rgba(255,159,10,.35);
+      background: rgba(56,40,18,.92);
+    }
+
+    .ac-fab-status.error{
+      border-color: rgba(255,69,58,.35);
+      background: rgba(56,24,22,.92);
+    }
   </style>
 </head>
 <body>
 
   <div class="ac-page">
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h">
         <h2>Cases</h2>
         <div class="ac-metrics-inline">
@@ -387,7 +446,7 @@
       </div>
     </section>
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h"><h2>Patient & Setup</h2></div>
       <div class="ac-grid">
         <label class="ac-field">
@@ -451,7 +510,7 @@
       </div>
     </section>
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h"><h2>Imaging & Anatomy</h2></div>
       <div class="ac-grid">
         <div class="ac-field ac-time">
@@ -508,7 +567,7 @@
       </div>
     </section>
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h">
         <h2>Procedure & Timing</h2>
         <div class="ac-metrics-inline">
@@ -598,12 +657,12 @@
       </div>
     </section>
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h"><h2>Notes</h2></div>
       <textarea id="notes" class="ac-notes" rows="5" placeholder="Optional notes (no PHI)"></textarea>
     </section>
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h">
         <h2>Photos</h2>
         <div class="ac-actions">
@@ -620,7 +679,7 @@
       <div id="photoList" class="ac-photo-list"></div>
     </section>
 
-    <section class="ac-card">
+    <section class="ac-card ac-native-card">
       <div class="ac-card-h">
         <h2>Preview</h2>
         <div class="ac-actions">
@@ -635,6 +694,8 @@
     </section>
   </div>
 
+  <div id="fabStatus" class="ac-fab-status info">Saved</div>
+
   <script>
     (function(){
       const STORAGE_KEY = "case-tracker-cases";
@@ -647,6 +708,7 @@
       const detailPassesDiv = document.getElementById("detailPasses");
       const photoListEl = document.getElementById("photoList");
       const photosInput = document.getElementById("photos");
+      const fabStatus = document.getElementById("fabStatus");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
@@ -658,9 +720,39 @@
       let activeCaseId = null;
       let suppressAutosave = false;
       let autosaveTimer = null;
+      let fabStatusTimer = null;
 
-      function setStatus(msg){
+      function triggerHaptic(type = "light"){
+        if(!("vibrate" in navigator)) return;
+
+        if(type === "success"){
+          navigator.vibrate([12, 18, 12]);
+        } else if(type === "warning"){
+          navigator.vibrate([18]);
+        } else if(type === "error"){
+          navigator.vibrate([28, 24, 28]);
+        } else {
+          navigator.vibrate([10]);
+        }
+      }
+
+      function showFabStatus(message, tone = "info", ms = 1400){
+        if(!fabStatus) return;
+
+        fabStatus.textContent = message;
+        fabStatus.className = `ac-fab-status ${tone} show`;
+
+        clearTimeout(fabStatusTimer);
+        fabStatusTimer = setTimeout(() => {
+          fabStatus.className = "ac-fab-status info";
+        }, ms);
+      }
+
+      function setStatus(msg, tone = "info", useFab = false){
         statusEl.textContent = msg || "";
+        if(useFab && msg){
+          showFabStatus(msg, tone);
+        }
       }
 
       function pad2(n){
@@ -1025,7 +1117,8 @@
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(() => {
           autosave();
-          setStatus("Auto-saved locally.");
+          setStatus("Auto-saved locally.", "success");
+          showFabStatus("Auto-saved", "success", 1100);
         }, 250);
       }
 
@@ -1038,7 +1131,9 @@
         setActiveCase(found.id);
         applyFormData(found.data);
         refreshCaseList();
-        setStatus("Case loaded. Photos need to be reselected.");
+        setStatus("Case loaded. Photos need to be reselected.", "info");
+        showFabStatus("Case loaded", "info");
+        triggerHaptic("light");
       }
 
       function createNewCase(){
@@ -1075,13 +1170,16 @@
 
         applyFormData(blank);
         autosave();
-        setStatus("New case created.");
+        setStatus("New case created.", "success");
+        showFabStatus("New case created", "success");
+        triggerHaptic("success");
       }
 
       function deleteCurrentCase(){
         const current = activeCaseId || getActiveCase();
         if(!current){
-          setStatus("No case selected.");
+          setStatus("No case selected.", "warn");
+          showFabStatus("No case selected", "warn");
           return;
         }
 
@@ -1095,13 +1193,16 @@
           setActiveCase(next.id);
           applyFormData(next.data);
           refreshCaseList();
-          setStatus("Case deleted.");
+          setStatus("Case deleted.", "warn");
         } else {
           activeCaseId = null;
           setActiveCase("");
           createNewCase();
-          setStatus("Case deleted. New case created.");
+          setStatus("Case deleted. New case created.", "warn");
         }
+
+        showFabStatus("Case deleted", "warn");
+        triggerHaptic("warning");
       }
 
       function buildSummary(){
@@ -1208,7 +1309,8 @@
 
       async function shareCase(summary){
         if(!navigator.share){
-          setStatus("Native sharing is not supported on this browser. Use Copy or Text Case.");
+          setStatus("Native sharing is not supported on this browser. Use Copy or Text Case.", "warn");
+          showFabStatus("Sharing unavailable", "warn");
           return;
         }
 
@@ -1227,18 +1329,25 @@
 
             if(navigator.canShare(fileShareData)){
               await navigator.share(fileShareData);
-              setStatus("Shared.");
+              setStatus("Shared.", "success");
+              showFabStatus("Shared", "success");
+              triggerHaptic("success");
               return;
             }
           }
 
           await navigator.share(shareData);
-          setStatus("Shared.");
+          setStatus("Shared.", "success");
+          showFabStatus("Shared", "success");
+          triggerHaptic("success");
         } catch (err){
           if(err && err.name === "AbortError"){
-            setStatus("Share cancelled.");
+            setStatus("Share cancelled.", "warn");
+            showFabStatus("Share cancelled", "warn");
           } else {
-            setStatus("Share failed on this device/browser. Use Copy or Text Case.");
+            setStatus("Share failed on this device/browser. Use Copy or Text Case.", "error");
+            showFabStatus("Share failed", "error");
+            triggerHaptic("error");
           }
         }
       }
@@ -1251,6 +1360,7 @@
             el.value = nowHHMM();
             recalc();
             scheduleAutosave();
+            triggerHaptic("light");
           }
         });
       });
@@ -1271,6 +1381,8 @@
       document.getElementById("addDetailPass").addEventListener("click", () => {
         addDetailPassRow("", "", "");
         scheduleAutosave();
+        showFabStatus("Pass added", "info", 900);
+        triggerHaptic("light");
       });
 
       document.getElementById("clearDetailPasses").addEventListener("click", () => {
@@ -1278,6 +1390,8 @@
         addDetailPassRow("", "", "");
         recalc();
         scheduleAutosave();
+        showFabStatus("Passes cleared", "warn", 900);
+        triggerHaptic("warning");
       });
 
       photosInput.addEventListener("change", () => {
@@ -1290,12 +1404,14 @@
         }));
 
         renderPhotos();
-        setStatus("Photos selected for this session.");
+        setStatus("Photos selected for this session.", "info");
+        showFabStatus("Photos selected", "info");
       });
 
       document.getElementById("clearPhotos").addEventListener("click", () => {
         clearPhotosOnly();
-        setStatus("Photos cleared.");
+        setStatus("Photos cleared.", "info");
+        showFabStatus("Photos cleared", "info");
       });
 
       savedCasesEl.addEventListener("change", () => {
@@ -1310,7 +1426,9 @@
 
       document.getElementById("saveNow").addEventListener("click", () => {
         autosave();
-        setStatus("Saved locally.");
+        setStatus("Saved locally.", "success");
+        showFabStatus("Saved", "success");
+        triggerHaptic("success");
       });
 
       document.getElementById("deleteCase").addEventListener("click", () => {
@@ -1320,23 +1438,37 @@
       document.getElementById("buildPreview").addEventListener("click", () => {
         const summary = buildSummary();
         previewEl.value = summary;
-        setStatus("Preview built.");
+        setStatus("Preview built.", "info");
+        showFabStatus("Preview built", "info");
+        triggerHaptic("light");
       });
 
       document.getElementById("copyCase").addEventListener("click", async () => {
         const summary = buildSummary();
         previewEl.value = summary;
         const ok = await copyText(summary);
-        setStatus(ok ? "Copied." : "Copy blocked by browser. Manually copy from the preview box.");
+        if(ok){
+          setStatus("Copied.", "success");
+          showFabStatus("Copied", "success");
+          triggerHaptic("success");
+        } else {
+          setStatus("Copy blocked by browser. Manually copy from the preview box.", "warn");
+          showFabStatus("Copy blocked", "warn");
+          triggerHaptic("warning");
+        }
       });
 
       document.getElementById("textCase").addEventListener("click", () => {
         const summary = buildSummary();
         previewEl.value = summary;
         if(!summary.trim()){
-          setStatus("Nothing to send.");
+          setStatus("Nothing to send.", "warn");
+          showFabStatus("Nothing to send", "warn");
           return;
         }
+        setStatus("Opening Messages.", "info");
+        showFabStatus("Opening Messages", "info");
+        triggerHaptic("light");
         openSmsComposer(summary);
       });
 
@@ -1344,7 +1476,8 @@
         const summary = buildSummary();
         previewEl.value = summary;
         if(!summary.trim()){
-          setStatus("Nothing to share.");
+          setStatus("Nothing to share.", "warn");
+          showFabStatus("Nothing to share", "warn");
           return;
         }
         await shareCase(summary);
@@ -1360,7 +1493,7 @@
           setActiveCase(found.id);
           applyFormData(found.data);
           refreshCaseList();
-          setStatus("Loaded saved case.");
+          setStatus("Loaded saved case.", "info");
         } else {
           createNewCase();
         }
