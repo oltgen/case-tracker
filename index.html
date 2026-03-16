@@ -45,37 +45,10 @@
 
     .ac-page{
       width: 100%;
-      padding: 28px 14px 48px;
+      padding: 14px 14px 48px;
       color: var(--text);
       max-width: 1180px;
       margin: 0 auto;
-    }
-
-    .ac-header{ margin-bottom: 18px; }
-
-    .ac-badge{
-      display:inline-flex;
-      align-items:center;
-      padding: 6px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      font-size: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,.04);
-      margin-bottom: 10px;
-    }
-
-    .ac-title{
-      margin: 0;
-      font-size: clamp(28px, 3.2vw, 44px);
-      letter-spacing: -0.02em;
-      line-height: 1.05;
-    }
-
-    .ac-subtitle{
-      margin: 10px 0 0;
-      color: var(--muted);
-      max-width: 70ch;
     }
 
     .ac-card{
@@ -161,6 +134,11 @@
       align-items:center;
     }
 
+    .ac-time-row input{
+      flex: 1;
+      min-width: 0;
+    }
+
     .ac-now{
       padding: 10px 12px;
       border-radius: 12px;
@@ -169,6 +147,7 @@
       color: rgba(255,255,255,.95);
       cursor:pointer;
       user-select:none;
+      flex-shrink: 0;
     }
 
     .ac-btn{
@@ -347,13 +326,6 @@
 <body>
 
   <div class="ac-page">
-    <header class="ac-header">
-      <div class="ac-badge">Case Tracker</div>
-      <h1 class="ac-title">Case Tracker (Web) — No Save</h1>
-      <p class="ac-subtitle">
-        Enter case data, then tap <b>Text Case</b> to open Messages with a prefilled summary (no PHI). Data will not be saved.
-      </p>
-    </header>
 
     <section class="ac-card">
       <div class="ac-card-h"><h2>Patient & Setup</h2></div>
@@ -517,7 +489,7 @@
           <div id="detailPasses" class="ac-detail-list"></div>
 
           <div class="ac-actions" style="margin-top:10px;">
-            <button id="addDetailPass" type="button" class="ac-btn">+ Add Detail Pass</button>
+            <button id="addDetailPass" type="button" class="ac-btn">Add Pass</button>
             <button id="clearDetailPasses" type="button" class="ac-btn ac-btn-ghost">Clear</button>
           </div>
         </div>
