@@ -16,14 +16,22 @@
     :root{
       --bg1: #0b1220;
       --bg2: #101827;
-      --card: rgba(18,20,28,.78);
-      --card2: rgba(18,20,28,.62);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.65);
+      --card: rgba(28,30,36,.82);
+      --card2: rgba(28,30,36,.70);
+      --text: rgba(255,255,255,.94);
+      --muted: rgba(255,255,255,.68);
       --line: rgba(255,255,255,.10);
-      --shadow: 0 20px 45px rgba(0,0,0,.35);
+      --line-strong: rgba(255,255,255,.16);
+      --shadow: 0 18px 40px rgba(0,0,0,.34);
       --danger: rgba(255,69,58,.18);
       --danger-line: rgba(255,69,58,.45);
+      --blue: #1790ff;
+      --blue-soft: rgba(23,144,255,.18);
+      --purple: #d449ff;
+      --orange: #ff9f3d;
+      --green: #30d158;
+      --input: rgba(0,0,0,.34);
+      --pill: rgba(255,255,255,.08);
     }
 
     * { box-sizing: border-box; }
@@ -33,8 +41,8 @@
       padding: 0;
       min-height: 100%;
       background:
-        radial-gradient(circle at top left, rgba(10,132,255,.16), transparent 32%),
-        radial-gradient(circle at bottom right, rgba(191,90,242,.14), transparent 28%),
+        radial-gradient(circle at top left, rgba(10,132,255,.14), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(191,90,242,.12), transparent 24%),
         linear-gradient(180deg, var(--bg1), var(--bg2));
       color: var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
@@ -47,21 +55,20 @@
 
     .ac-page{
       width: 100%;
-      padding: 14px 14px 48px;
-      color: var(--text);
-      max-width: 1180px;
+      max-width: 920px;
       margin: 0 auto;
+      padding: 10px 10px 36px;
     }
 
     .ac-card{
       background: linear-gradient(180deg, var(--card), var(--card2));
       border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
+      border-radius: 16px;
+      padding: 12px;
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      margin-top: 14px;
+      margin-top: 10px;
     }
 
     .ac-native-card{
@@ -70,29 +77,30 @@
 
     .ac-card-h{
       display:flex;
-      align-items:flex-start;
+      align-items:center;
       justify-content:space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 8px;
       flex-wrap: wrap;
     }
 
     .ac-card h2{
       margin: 0;
-      font-size: 20px;
+      font-size: 18px;
       letter-spacing: -0.01em;
+      line-height: 1.1;
     }
 
     .ac-grid{
       display:grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 8px;
     }
 
     .ac-grid-3{
       display:grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 8px;
     }
 
     @media (max-width: 880px){
@@ -105,18 +113,20 @@
     .ac-field{
       display:flex;
       flex-direction:column;
-      gap: 6px;
+      gap: 5px;
     }
 
     .ac-field > span{
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
+      line-height: 1.2;
     }
 
     .ac-help{
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
-      margin-top: 4px;
+      margin-top: 2px;
+      line-height: 1.3;
     }
 
     input, select, textarea, button{
@@ -124,48 +134,29 @@
     }
 
     .ac-field input,
-    .ac-field select{
+    .ac-field select,
+    .ac-inline-input,
+    .ac-compact-select{
       width: 100%;
       box-sizing:border-box;
-      padding: 12px 12px;
+      padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid var(--line);
-      background: rgba(0,0,0,.28);
+      background: var(--input);
       color: var(--text);
       outline: none;
+      min-height: 42px;
     }
 
     .ac-field input:focus,
     .ac-field select:focus,
+    .ac-inline-input:focus,
+    .ac-compact-select:focus,
     .ac-notes:focus,
     .ac-preview:focus,
     .ac-detail-row input:focus{
       border-color: rgba(10,132,255,.65);
-      box-shadow: 0 0 0 4px rgba(10,132,255,.18);
-    }
-
-    .ac-time-row{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-    }
-
-    .ac-time-row input{
-      flex: 1;
-      min-width: 0;
-    }
-
-    .ac-now{
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(10,132,255,.45);
-      background: rgba(10,132,255,.18);
-      color: rgba(255,255,255,.95);
-      cursor:pointer;
-      user-select:none;
-      flex-shrink: 0;
-      transition: transform .08s ease, background .18s ease, box-shadow .18s ease;
-      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 0 0 4px rgba(10,132,255,.16);
     }
 
     .ac-btn{
@@ -177,18 +168,20 @@
       cursor:pointer;
       transition: transform .08s ease, background .18s ease, box-shadow .18s ease;
       -webkit-tap-highlight-color: transparent;
+      min-height: 42px;
     }
 
     .ac-btn:active,
-    .ac-now:active{
-      transform: scale(.97);
+    .ac-now:active,
+    .ac-collapse-btn:active{
+      transform: scale(.985);
     }
 
     .ac-btn-ghost{ background: transparent; }
 
     .ac-btn-primary{
-      border-color: rgba(10,132,255,.55);
-      background: rgba(10,132,255,.90);
+      border-color: rgba(23,144,255,.55);
+      background: rgba(23,144,255,.92);
       color: white;
     }
 
@@ -198,63 +191,64 @@
       color: white;
     }
 
+    .ac-btn-small{
+      min-height: 38px;
+      padding: 8px 10px;
+      border-radius: 11px;
+    }
+
     .ac-actions{
       display:flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap:wrap;
-    }
-
-    .ac-metric{
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-      background: rgba(0,0,0,.22);
-      display:flex;
-      flex-direction:column;
-      gap: 6px;
-    }
-
-    .ac-metric-k{
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .ac-metric-v{
-      font-size: 18px;
-      font-weight: 650;
-    }
-
-    .ac-metrics-inline{
-      display:flex;
-      gap: 10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
     }
 
     .ac-pill{
-      display:flex;
-      gap: 8px;
-      align-items:baseline;
-      padding: 8px 10px;
+      display:inline-flex;
+      gap: 7px;
+      align-items:center;
+      padding: 7px 10px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(0,0,0,.22);
+      background: var(--pill);
       white-space:nowrap;
     }
 
     .ac-pill .k{
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
     }
 
     .ac-pill .v{
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
     }
 
-    .ac-pill-purple{ border-color: rgba(191,90,242,.35); }
-    .ac-pill-orange{ border-color: rgba(255,159,10,.35); }
-    .ac-pill-green{ border-color: rgba(48,209,88,.35); }
+    .ac-pill-purple{ border-color: rgba(212,73,255,.34); }
+    .ac-pill-orange{ border-color: rgba(255,159,61,.34); }
+    .ac-pill-green{ border-color: rgba(48,209,88,.34); }
+
+    .ac-metric{
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px;
+      background: rgba(0,0,0,.20);
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+    }
+
+    .ac-metric-k{
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+
+    .ac-metric-v{
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
 
     .ac-notes,
     .ac-preview{
@@ -263,66 +257,32 @@
       padding: 12px;
       border-radius: 14px;
       border: 1px solid var(--line);
-      background: rgba(0,0,0,.28);
+      background: var(--input);
       color: var(--text);
       resize: vertical;
     }
 
+    .ac-notes{
+      min-height: 110px;
+    }
+
     .ac-preview{
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      margin-top: 10px;
+      margin-top: 8px;
+      min-height: 220px;
     }
 
     .ac-status{
-      margin-top: 10px;
+      margin-top: 8px;
       color: var(--muted);
-      font-size: 13px;
-      min-height: 18px;
-    }
-
-    .ac-detail-head{
-      display:grid;
-      grid-template-columns: 160px 140px 160px 90px;
-      gap: 10px;
-      padding: 8px 2px;
-      color: rgba(255,255,255,.65);
       font-size: 12px;
-    }
-
-    .ac-detail-list{
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-      margin-top: 6px;
-    }
-
-    .ac-detail-row{
-      display:grid;
-      grid-template-columns: 160px 140px 160px 90px;
-      gap: 10px;
-      align-items:center;
-    }
-
-    .ac-detail-row input{
-      width:100%;
-      box-sizing:border-box;
-      padding: 12px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(0,0,0,.28);
-      color: var(--text);
-      outline: none;
-    }
-
-    @media (max-width: 880px){
-      .ac-detail-head{ display:none; }
-      .ac-detail-row{ grid-template-columns: 1fr; }
+      min-height: 16px;
     }
 
     .ac-fab-status{
       position: fixed;
       left: 50%;
-      bottom: calc(18px + env(safe-area-inset-bottom));
+      bottom: calc(16px + env(safe-area-inset-bottom));
       transform: translateX(-50%) translateY(20px);
       padding: 10px 14px;
       border-radius: 999px;
@@ -332,7 +292,7 @@
       box-shadow: 0 12px 28px rgba(0,0,0,.32);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       opacity: 0;
       pointer-events: none;
@@ -370,7 +330,7 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 12px;
+      gap: 10px;
       padding: 0;
       border: none;
       background: transparent;
@@ -380,7 +340,7 @@
     }
 
     .ac-collapse-icon{
-      font-size: 16px;
+      font-size: 15px;
       color: var(--muted);
       transition: transform .18s ease;
     }
@@ -399,54 +359,206 @@
 
     .ac-inline-form{
       display:grid;
-      gap: 12px;
+      gap: 8px;
     }
 
-    .ac-inline-row{
+    .ac-compact-row{
       display:grid;
-      grid-template-columns: 140px minmax(0, 1fr);
-      gap: 12px;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 10px;
+      align-items:center;
+      min-height: 42px;
+    }
+
+    .ac-compact-label{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.25;
+    }
+
+    .ac-time-compact{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) 72px;
+      gap: 8px;
       align-items:center;
     }
 
-    .ac-inline-row label{
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .ac-inline-row input,
-    .ac-inline-row select{
-      width:100%;
+    .ac-time-value{
+      width: 100%;
       box-sizing:border-box;
-      padding: 12px 12px;
-      border-radius: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(0,0,0,.28);
+      background: rgba(255,255,255,.10);
       color: var(--text);
       outline: none;
+      min-height: 42px;
+      text-align: center;
     }
 
-    .ac-inline-row input:focus,
-    .ac-inline-row select:focus{
-      border-color: rgba(10,132,255,.65);
-      box-shadow: 0 0 0 4px rgba(10,132,255,.18);
+    .ac-now{
+      padding: 9px 12px;
+      min-height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(23,144,255,.45);
+      background: rgba(23,144,255,.92);
+      color: rgba(255,255,255,.96);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease, background .18s ease, box-shadow .18s ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    @media (max-width: 880px){
-      .ac-inline-row{
-        grid-template-columns: 110px minmax(0, 1fr);
-      }
+    .ac-section-divider{
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+      margin: 2px 0;
     }
 
     .ac-volume-grid{
       display:grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 8px;
+    }
+
+    .ac-detail-list{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .ac-detail-row{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.16);
+      padding: 8px;
+      display:grid;
+      gap: 8px;
+    }
+
+    .ac-detail-grid{
+      display:grid;
+      grid-template-columns: 110px 1fr 1fr;
+      gap: 8px;
+      align-items:center;
+    }
+
+    .ac-detail-row input{
+      width:100%;
+      box-sizing:border-box;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--input);
+      color: var(--text);
+      outline: none;
+      min-height: 40px;
+    }
+
+    .ac-detail-tools{
+      display:flex;
+      justify-content:space-between;
+      gap: 8px;
+      flex-wrap:wrap;
+    }
+
+    .ac-totals{
+      display:grid;
+      gap: 6px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+    }
+
+    .ac-total-line{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .ac-total-line .label{
+      color: var(--muted);
+    }
+
+    .ac-total-line .value{
+      font-weight: 700;
+    }
+
+    .ac-total-line.aqua .value{ color: var(--blue); }
+    .ac-total-line.trus .value{ color: var(--purple); }
+    .ac-total-line.resection .value{ color: var(--orange); }
+
+    .ac-compact-actions{
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+    }
+
+    .ac-warning{
+      display:none;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,159,10,.28);
+      background: rgba(255,159,10,.10);
+      color: rgba(255,225,180,.96);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .ac-warning.show{
+      display:block;
     }
 
     @media (max-width: 880px){
+      .ac-page{
+        padding: 8px 8px 32px;
+      }
+
+      .ac-card{
+        padding: 10px;
+        border-radius: 15px;
+      }
+
+      .ac-card h2{
+        font-size: 17px;
+      }
+
+      .ac-compact-row{
+        grid-template-columns: 102px minmax(0, 1fr);
+        gap: 8px;
+      }
+
+      .ac-time-compact{
+        grid-template-columns: minmax(0, 1fr) 70px;
+      }
+
       .ac-volume-grid{
         grid-template-columns: 1fr;
+      }
+
+      .ac-detail-grid{
+        grid-template-columns: 1fr;
+      }
+
+      .ac-preview{
+        min-height: 180px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *,
+      .ac-fab-status,
+      .ac-btn,
+      .ac-now,
+      .ac-collapse-icon{
+        transition: none !important;
+        animation: none !important;
       }
     }
   </style>
@@ -470,23 +582,24 @@
       </div>
 
       <div id="casesCollapseBody" class="ac-collapsible" hidden>
-        <div class="ac-grid-3">
-          <label class="ac-field">
-            <span>Case Name</span>
-            <input id="caseName" type="text" placeholder="Case name">
-          </label>
+        <div class="ac-inline-form">
+          <div class="ac-compact-row">
+            <div class="ac-compact-label">Case Name</div>
+            <input id="caseName" class="ac-inline-input" type="text" placeholder="Case name">
+          </div>
 
-          <label class="ac-field">
-            <span>Saved Cases</span>
-            <select id="savedCases"></select>
-          </label>
+          <div class="ac-compact-row">
+            <div class="ac-compact-label">Saved Cases</div>
+            <select id="savedCases" class="ac-compact-select"></select>
+          </div>
 
-          <div class="ac-field">
-            <span>Actions</span>
-            <div class="ac-actions">
-              <button id="newCase" type="button" class="ac-btn ac-btn-primary">New Case</button>
-              <button id="saveNow" type="button" class="ac-btn">Save Now</button>
-              <button id="deleteCase" type="button" class="ac-btn ac-btn-danger">Delete Case</button>
+          <div class="ac-compact-row" style="align-items:start;">
+            <div class="ac-compact-label" style="padding-top:10px;">Actions</div>
+            <div class="ac-compact-actions">
+              <button id="newCase" type="button" class="ac-btn ac-btn-primary ac-btn-small">New</button>
+              <button id="duplicateCase" type="button" class="ac-btn ac-btn-small">Duplicate</button>
+              <button id="saveNow" type="button" class="ac-btn ac-btn-small">Save</button>
+              <button id="deleteCase" type="button" class="ac-btn ac-btn-danger ac-btn-small">Delete</button>
             </div>
           </div>
         </div>
@@ -497,40 +610,40 @@
       <div class="ac-card-h"><h2>Patient &amp; Setup</h2></div>
 
       <div class="ac-inline-form">
-        <div class="ac-inline-row">
-          <label for="surgeon">Surgeon</label>
-          <input id="surgeon" type="text" placeholder="Surgeon (no patient name)">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Surgeon</div>
+          <input id="surgeon" class="ac-inline-input" type="text" placeholder="Surgeon">
         </div>
 
-        <div class="ac-inline-row">
-          <label for="handpieceLot">Handpiece LOT #</label>
-          <input id="handpieceLot" type="text" placeholder="LOT #">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">LOT #</div>
+          <input id="handpieceLot" class="ac-inline-input" type="text" placeholder="Handpiece LOT #">
         </div>
 
-        <div class="ac-inline-row">
-          <label for="procedureType">Procedure Type</label>
-          <select id="procedureType">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Procedure</div>
+          <select id="procedureType" class="ac-compact-select">
             <option value="Aquabeam">Aquabeam</option>
             <option value="Hydros">Hydros</option>
           </select>
         </div>
 
-        <div class="ac-inline-row">
-          <label for="patientInRoom">Patient in Room</label>
-          <div class="ac-time-row">
-            <input id="patientInRoom" type="time">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Pt in Room</div>
+          <div class="ac-time-compact">
+            <input id="patientInRoom" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="patientInRoom">Now</button>
           </div>
         </div>
 
-        <div class="ac-inline-row">
-          <label for="prostateVolumeKnown">Prostate Volume (Known, cc)</label>
-          <input id="prostateVolumeKnown" type="number" step="0.1" min="0" placeholder="Optional">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Known Vol</div>
+          <input id="prostateVolumeKnown" class="ac-inline-input" type="number" step="0.1" min="0" placeholder="cc">
         </div>
 
-        <div class="ac-inline-row">
-          <label for="prevProcedures">Previous Procedures</label>
-          <select id="prevProcedures">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Previous</div>
+          <select id="prevProcedures" class="ac-compact-select">
             <option value="NA" selected>NA</option>
             <option value="Greenlight">Greenlight</option>
             <option value="iTIND">iTIND</option>
@@ -543,9 +656,9 @@
           </select>
         </div>
 
-        <div class="ac-inline-row">
-          <label for="anesthesia">Anesthesia</label>
-          <select id="anesthesia">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Anesthesia</div>
+          <select id="anesthesia" class="ac-compact-select">
             <option value="General" selected>General</option>
             <option value="Spinal">Spinal</option>
           </select>
@@ -555,55 +668,56 @@
 
     <section class="ac-card ac-native-card">
       <div class="ac-card-h"><h2>Imaging &amp; Anatomy</h2></div>
-      <div class="ac-grid">
-        <div class="ac-field ac-time">
-          <span>TRUS in</span>
-          <div class="ac-time-row">
-            <input id="trusIn" type="time">
+
+      <div class="ac-inline-form">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">TRUS in</div>
+          <div class="ac-time-compact">
+            <input id="trusIn" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="trusIn">Now</button>
           </div>
         </div>
 
-        <label class="ac-field">
-          <span>Intravesical Lobe</span>
-          <select id="ivLobe">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">IV Lobe</div>
+          <select id="ivLobe" class="ac-compact-select">
             <option value="None" selected>None</option>
             <option value="Middle">Middle</option>
             <option value="Tri-Lobe">Tri-Lobe</option>
             <option value="Lateral Lobe">Lateral Lobe</option>
           </select>
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>L (mm)</span>
-          <input id="lenMm" type="number" step="0.1" min="0" placeholder="L in mm">
-        </label>
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">L (mm)</div>
+          <input id="lenMm" class="ac-inline-input" type="number" step="0.1" min="0" placeholder="L">
+        </div>
 
-        <label class="ac-field">
-          <span>W (mm)</span>
-          <input id="widMm" type="number" step="0.1" min="0" placeholder="W in mm">
-        </label>
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">W (mm)</div>
+          <input id="widMm" class="ac-inline-input" type="number" step="0.1" min="0" placeholder="W">
+        </div>
 
-        <label class="ac-field">
-          <span>H (mm)</span>
-          <input id="htMm" type="number" step="0.1" min="0" placeholder="H in mm">
-        </label>
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">H (mm)</div>
+          <input id="htMm" class="ac-inline-input" type="number" step="0.1" min="0" placeholder="H">
+        </div>
 
-        <label class="ac-field">
-          <span>IPP (mm)</span>
-          <input id="ippMm" type="number" step="0.1" min="0" placeholder="IPP in mm">
-        </label>
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">IPP (mm)</div>
+          <input id="ippMm" class="ac-inline-input" type="number" step="0.1" min="0" placeholder="IPP">
+        </div>
+      </div>
 
-        <div class="ac-volume-grid" style="grid-column: 1 / -1;">
-          <div class="ac-metric">
-            <div class="ac-metric-k">Ellipsoid Volume</div>
-            <div class="ac-metric-v" id="calcVolEllipsoid">—</div>
-          </div>
+      <div class="ac-volume-grid" style="margin-top:8px;">
+        <div class="ac-metric">
+          <div class="ac-metric-k">Ellipsoid Volume</div>
+          <div class="ac-metric-v" id="calcVolEllipsoid">—</div>
+        </div>
 
-          <div class="ac-metric">
-            <div class="ac-metric-k">Bullet Volume</div>
-            <div class="ac-metric-v" id="calcVolBullet">—</div>
-          </div>
+        <div class="ac-metric">
+          <div class="ac-metric-k">Bullet Volume</div>
+          <div class="ac-metric-v" id="calcVolBullet">—</div>
         </div>
       </div>
     </section>
@@ -611,96 +725,113 @@
     <section class="ac-card ac-native-card">
       <div class="ac-card-h">
         <h2>Procedure &amp; Timing</h2>
-        <div class="ac-metrics-inline">
-          <div class="ac-pill"><span class="k">AQUA Time</span><span class="v" id="aquaTimeLabel">00:00</span></div>
-          <div class="ac-pill ac-pill-purple"><span class="k">TRUS → Cath</span><span class="v" id="trusCathLabel">00:00</span></div>
+        <div class="ac-actions">
+          <div class="ac-pill"><span class="k">AQUA</span><span class="v" id="aquaTimeLabel">00:00</span></div>
+          <div class="ac-pill ac-pill-purple"><span class="k">TRUS→Cath</span><span class="v" id="trusCathLabel">00:00</span></div>
           <div class="ac-pill ac-pill-orange"><span class="k">Resection</span><span class="v" id="resectionLabel">00:00</span></div>
         </div>
       </div>
 
-      <div class="ac-grid">
-        <div class="ac-field ac-time">
-          <span>HP in</span>
-          <div class="ac-time-row">
-            <input id="hpIn" type="time">
+      <div class="ac-inline-form">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">HP in</div>
+          <div class="ac-time-compact">
+            <input id="hpIn" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="hpIn">Now</button>
           </div>
         </div>
 
-        <div class="ac-field ac-time">
-          <span>AQUA Start Time</span>
-          <div class="ac-time-row">
-            <input id="aquaStart" type="time">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">AQUA Start</div>
+          <div class="ac-time-compact">
+            <input id="aquaStart" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="aquaStart">Now</button>
           </div>
         </div>
 
-        <div class="ac-field" style="grid-column: 1 / -1;">
+        <div class="ac-section-divider"></div>
+
+        <div class="ac-field">
           <span>Detail Passes</span>
           <div class="ac-help">Duration counts toward AQUA Time. Angle and Depth are optional.</div>
 
-          <div class="ac-detail-head">
-            <div>Duration (MM:SS)</div>
-            <div>Angle</div>
-            <div>Depth (mm)</div>
-            <div></div>
-          </div>
-
           <div id="detailPasses" class="ac-detail-list"></div>
 
-          <div class="ac-actions" style="margin-top:10px;">
-            <button id="addDetailPass" type="button" class="ac-btn">Add Pass</button>
-            <button id="clearDetailPasses" type="button" class="ac-btn ac-btn-ghost">Clear</button>
+          <div class="ac-actions">
+            <button id="addDetailPass" type="button" class="ac-btn ac-btn-small">Add Pass</button>
+            <button id="duplicateLastPass" type="button" class="ac-btn ac-btn-small">Duplicate Last</button>
+            <button id="add30sPass" type="button" class="ac-btn ac-btn-small">+0:30</button>
+            <button id="add60sPass" type="button" class="ac-btn ac-btn-small">+1:00</button>
+            <button id="clearDetailPasses" type="button" class="ac-btn ac-btn-ghost ac-btn-small">Clear</button>
           </div>
         </div>
 
-        <div class="ac-field ac-time">
-          <span>HP Out / FBNC Start</span>
-          <div class="ac-time-row">
-            <input id="hpOut" type="time">
+        <div class="ac-section-divider"></div>
+
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">HP Out</div>
+          <div class="ac-time-compact">
+            <input id="hpOut" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="hpOut">Now</button>
           </div>
         </div>
 
-        <div class="ac-field ac-time">
-          <span>Catheter In / FBNC End</span>
-          <div class="ac-time-row">
-            <input id="cathIn" type="time">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Cath In</div>
+          <div class="ac-time-compact">
+            <input id="cathIn" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="cathIn">Now</button>
           </div>
         </div>
 
-        <label class="ac-field">
-          <span>Cautery Type</span>
-          <select id="cauteryType">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Cautery</div>
+          <select id="cauteryType" class="ac-compact-select">
             <option value="Bipolar" selected>Bipolar</option>
             <option value="Monopolar">Monopolar</option>
           </select>
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>Color</span>
-          <select id="caseColor">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Color</div>
+          <select id="caseColor" class="ac-compact-select">
             <option value="Clear">Clear</option>
             <option value="Light Pink" selected>Light Pink</option>
             <option value="Pink">Pink</option>
             <option value="Red">Red</option>
           </select>
-        </label>
+        </div>
 
-        <div class="ac-field ac-time">
-          <span>Out of Room</span>
-          <div class="ac-time-row">
-            <input id="outOfRoom" type="time">
+        <div class="ac-compact-row">
+          <div class="ac-compact-label">Out of Room</div>
+          <div class="ac-time-compact">
+            <input id="outOfRoom" class="ac-time-value" type="time">
             <button class="ac-now" type="button" data-now="outOfRoom">Now</button>
           </div>
         </div>
       </div>
+
+      <div class="ac-totals" style="margin-top:8px;">
+        <div class="ac-total-line aqua">
+          <span class="label">AQUA Time</span>
+          <span class="value" id="aquaTimeLine">00:00</span>
+        </div>
+        <div class="ac-total-line trus">
+          <span class="label">TRUS to Cath</span>
+          <span class="value" id="trusCathLine">00:00</span>
+        </div>
+        <div class="ac-total-line resection">
+          <span class="label">Resection Time</span>
+          <span class="value" id="resectionLine">00:00</span>
+        </div>
+      </div>
+
+      <div id="timeWarning" class="ac-warning"></div>
     </section>
 
     <section class="ac-card ac-native-card">
       <div class="ac-card-h"><h2>Notes</h2></div>
-      <textarea id="notes" class="ac-notes" rows="5" placeholder="Optional notes (no PHI)"></textarea>
+      <textarea id="notes" class="ac-notes" rows="3" placeholder="Optional notes (no PHI)"></textarea>
     </section>
 
     <section class="ac-card ac-native-card">
@@ -711,7 +842,7 @@
           <button id="copyCase" type="button" class="ac-btn">Copy</button>
         </div>
       </div>
-      <textarea id="preview" class="ac-preview" rows="18"></textarea>
+      <textarea id="preview" class="ac-preview" rows="12"></textarea>
       <div id="status" class="ac-status"></div>
     </section>
   </div>
@@ -722,6 +853,7 @@
     (function(){
       const STORAGE_KEY = "case-tracker-cases";
       const ACTIVE_CASE_KEY = "case-tracker-active";
+      const CASES_COLLAPSED_KEY = "case-tracker-cases-collapsed";
 
       const statusEl = document.getElementById("status");
       const previewEl = document.getElementById("preview");
@@ -729,10 +861,14 @@
       const savedCasesEl = document.getElementById("savedCases");
       const detailPassesDiv = document.getElementById("detailPasses");
       const fabStatus = document.getElementById("fabStatus");
+      const timeWarningEl = document.getElementById("timeWarning");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
       const resectionLabel = document.getElementById("resectionLabel");
+      const aquaTimeLine = document.getElementById("aquaTimeLine");
+      const trusCathLine = document.getElementById("trusCathLine");
+      const resectionLine = document.getElementById("resectionLine");
       const calcVolEllipsoidEl = document.getElementById("calcVolEllipsoid");
       const calcVolBulletEl = document.getElementById("calcVolBullet");
 
@@ -774,9 +910,14 @@
         statusEl.textContent = msg || "";
       }
 
+      function getCasesCollapsed(){
+        return localStorage.getItem(CASES_COLLAPSED_KEY) !== "false";
+      }
+
       function setCasesCollapsed(collapsed){
         casesCollapseBody.hidden = collapsed;
         casesCollapseBtn.setAttribute("aria-expanded", String(!collapsed));
+        localStorage.setItem(CASES_COLLAPSED_KEY, String(collapsed));
       }
 
       casesCollapseBtn.addEventListener("click", () => {
@@ -862,11 +1003,6 @@
         return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
       }
 
-      function fmtMinAsMmSs(totalMinutes){
-        if(totalMinutes == null) return "00:00";
-        return fmtMmSs(Math.round(totalMinutes * 60));
-      }
-
       function computeVolumes(){
         const knownTop = Number(document.getElementById("prostateVolumeKnown").value);
         const Lmm = Number(document.getElementById("lenMm").value);
@@ -891,9 +1027,16 @@
         };
       }
 
-      function addDetailPassRow(duration="", angle="", depth=""){
+      function makePassRowData(duration="", angle="", depth=""){
+        return { duration, angle, depth };
+      }
+
+      function addDetailPassRow(duration="", angle="", depth="", focusDuration=false){
         const row = document.createElement("div");
         row.className = "ac-detail-row";
+
+        const grid = document.createElement("div");
+        grid.className = "ac-detail-grid";
 
         const dur = document.createElement("input");
         dur.type = "text";
@@ -921,9 +1064,46 @@
         dep.className = "detailDepth";
         dep.addEventListener("input", scheduleAutosave);
 
+        grid.appendChild(dur);
+        grid.appendChild(ang);
+        grid.appendChild(dep);
+
+        const tools = document.createElement("div");
+        tools.className = "ac-detail-tools";
+
+        const leftTools = document.createElement("div");
+        leftTools.className = "ac-actions";
+
+        const plus30 = document.createElement("button");
+        plus30.type = "button";
+        plus30.className = "ac-btn ac-btn-small";
+        plus30.textContent = "+0:30";
+        plus30.addEventListener("click", () => {
+          const sec = parseDurationToSeconds(dur.value) || 0;
+          dur.value = fmtMmSs(sec + 30);
+          recalc();
+          scheduleAutosave();
+          triggerHaptic("light");
+        });
+
+        const plus60 = document.createElement("button");
+        plus60.type = "button";
+        plus60.className = "ac-btn ac-btn-small";
+        plus60.textContent = "+1:00";
+        plus60.addEventListener("click", () => {
+          const sec = parseDurationToSeconds(dur.value) || 0;
+          dur.value = fmtMmSs(sec + 60);
+          recalc();
+          scheduleAutosave();
+          triggerHaptic("light");
+        });
+
+        leftTools.appendChild(plus30);
+        leftTools.appendChild(plus60);
+
         const del = document.createElement("button");
         del.type = "button";
-        del.className = "ac-btn ac-btn-ghost";
+        del.className = "ac-btn ac-btn-ghost ac-btn-small";
         del.textContent = "Remove";
         del.addEventListener("click", () => {
           row.remove();
@@ -934,12 +1114,16 @@
           scheduleAutosave();
         });
 
-        row.appendChild(dur);
-        row.appendChild(ang);
-        row.appendChild(dep);
-        row.appendChild(del);
+        tools.appendChild(leftTools);
+        tools.appendChild(del);
 
+        row.appendChild(grid);
+        row.appendChild(tools);
         detailPassesDiv.appendChild(row);
+
+        if(focusDuration){
+          setTimeout(() => dur.focus(), 0);
+        }
       }
 
       function getRawDetailPasses(){
@@ -960,10 +1144,55 @@
           .filter(x => x.sec != null);
       }
 
+      function getTimeWarnings(){
+        const warnings = [];
+
+        const patientInRoom = parseTimeToMinutes(document.getElementById("patientInRoom").value);
+        const trusIn = parseTimeToMinutes(document.getElementById("trusIn").value);
+        const hpIn = parseTimeToMinutes(document.getElementById("hpIn").value);
+        const aquaStart = parseTimeToMinutes(document.getElementById("aquaStart").value);
+        const hpOut = parseTimeToMinutes(document.getElementById("hpOut").value);
+        const cathIn = parseTimeToMinutes(document.getElementById("cathIn").value);
+        const outOfRoom = parseTimeToMinutes(document.getElementById("outOfRoom").value);
+
+        if(patientInRoom != null && trusIn != null && trusIn < patientInRoom){
+          warnings.push("TRUS in is earlier than Patient in Room.");
+        }
+        if(trusIn != null && hpIn != null && hpIn < trusIn){
+          warnings.push("HP in is earlier than TRUS in.");
+        }
+        if(hpIn != null && aquaStart != null && aquaStart < hpIn){
+          warnings.push("AQUA Start is earlier than HP in.");
+        }
+        if(aquaStart != null && hpOut != null && hpOut < aquaStart){
+          warnings.push("HP Out is earlier than AQUA Start.");
+        }
+        if(hpOut != null && cathIn != null && cathIn < hpOut){
+          warnings.push("Catheter In is earlier than HP Out.");
+        }
+        if(patientInRoom != null && outOfRoom != null && outOfRoom < patientInRoom){
+          warnings.push("Out of Room is earlier than Patient in Room.");
+        }
+
+        return warnings;
+      }
+
+      function renderTimeWarnings(){
+        const warnings = getTimeWarnings();
+        if(!warnings.length){
+          timeWarningEl.className = "ac-warning";
+          timeWarningEl.textContent = "";
+          return;
+        }
+
+        timeWarningEl.className = "ac-warning show";
+        timeWarningEl.textContent = warnings.join(" ");
+      }
+
       function recalc(){
         const detail = getValidDetailPasses();
         const aquaTotal = detail.reduce((a, b) => a + b.sec, 0);
-        aquaTimeLabel.textContent = fmtMmSs(aquaTotal);
+        const aquaText = fmtMmSs(aquaTotal);
 
         const trusToCath = diffMinutes(
           parseTimeToMinutes(document.getElementById("trusIn").value),
@@ -975,12 +1204,22 @@
           parseTimeToMinutes(document.getElementById("cathIn").value)
         );
 
-        trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
-        resectionLabel.textContent = fmtMinAsMmSs(resection);
+        const trusText = trusToCath == null ? "00:00" : fmtMmSs(trusToCath * 60);
+        const resectionText = resection == null ? "00:00" : fmtMmSs(resection * 60);
+
+        aquaTimeLabel.textContent = aquaText;
+        trusCathLabel.textContent = trusText;
+        resectionLabel.textContent = resectionText;
+
+        aquaTimeLine.textContent = aquaText;
+        trusCathLine.textContent = trusText;
+        resectionLine.textContent = resectionText;
 
         const vols = computeVolumes();
         calcVolEllipsoidEl.textContent = vols.ellipsoid != null ? `${vols.ellipsoid.toFixed(1)} cc` : "—";
         calcVolBulletEl.textContent = vols.bullet != null ? `${vols.bullet.toFixed(1)} cc` : "—";
+
+        renderTimeWarnings();
       }
 
       function collectFormData(){
@@ -1040,9 +1279,9 @@
         detailPassesDiv.innerHTML = "";
         const passes = Array.isArray(data.detailPasses) && data.detailPasses.length
           ? data.detailPasses
-          : [{ duration: "", angle: "", depth: "" }];
+          : [makePassRowData("", "", "")];
 
-        passes.forEach(p => addDetailPassRow(p.duration || "", p.angle || "", p.depth || ""));
+        passes.forEach((p, index) => addDetailPassRow(p.duration || "", p.angle || "", p.depth || "", index === passes.length - 1 && !p.duration && !p.angle && !p.depth));
         recalc();
 
         suppressAutosave = false;
@@ -1113,7 +1352,7 @@
           autosave();
           setStatus("Auto-saved locally.");
           showFabStatus("Auto-saved", "success", 1100);
-        }, 250);
+        }, 220);
       }
 
       function loadCase(id){
@@ -1130,11 +1369,8 @@
         triggerHaptic("light");
       }
 
-      function createNewCase(){
-        activeCaseId = uid();
-        setActiveCase(activeCaseId);
-
-        const blank = {
+      function createBlankData(){
+        return {
           caseName: defaultCaseName(),
           surgeon: "",
           handpieceLot: "",
@@ -1157,13 +1393,34 @@
           caseColor: "Light Pink",
           outOfRoom: "",
           notes: "",
-          detailPasses: [{ duration: "", angle: "", depth: "" }]
+          detailPasses: [makePassRowData("", "", "")]
         };
+      }
 
-        applyFormData(blank);
+      function createNewCase(){
+        activeCaseId = uid();
+        setActiveCase(activeCaseId);
+        applyFormData(createBlankData());
         autosave();
         setStatus("New case created.");
         showFabStatus("New case created", "success");
+        triggerHaptic("success");
+      }
+
+      function duplicateCurrentCase(){
+        const currentData = collectFormData();
+        activeCaseId = uid();
+        setActiveCase(activeCaseId);
+
+        const duplicated = {
+          ...currentData,
+          caseName: ((currentData.caseName || "").trim() || defaultCaseName()) + " Copy"
+        };
+
+        applyFormData(duplicated);
+        autosave();
+        setStatus("Case duplicated.");
+        showFabStatus("Case duplicated", "success");
         triggerHaptic("success");
       }
 
@@ -1172,6 +1429,10 @@
         if(!current){
           setStatus("No case selected.");
           showFabStatus("No case selected", "warn");
+          return;
+        }
+
+        if(!window.confirm("Delete this saved case?")){
           return;
         }
 
@@ -1261,8 +1522,8 @@
         lines.push("");
         lines.push("Totals");
         lines.push(`AQUA Time: ${fmtMmSs(aquaTimeTotal)}`);
-        lines.push(`TRUS to Cath: ${fmtMinAsMmSs(trusToCathMin)}`);
-        lines.push(`Resection Time: ${fmtMinAsMmSs(resectionMin)}`);
+        lines.push(`TRUS to Cath: ${trusToCathMin == null ? "00:00" : fmtMmSs(trusToCathMin * 60)}`);
+        lines.push(`Resection Time: ${resectionMin == null ? "00:00" : fmtMmSs(resectionMin * 60)}`);
 
         if(data.cauteryType) lines.push(`Cautery Type: ${data.cauteryType}`);
         if(data.caseColor) lines.push(`Color: ${data.caseColor}`);
@@ -1272,6 +1533,13 @@
           lines.push("");
           lines.push("Notes");
           lines.push(data.notes);
+        }
+
+        const warnings = getTimeWarnings();
+        if(warnings.length){
+          lines.push("");
+          lines.push("Warnings");
+          warnings.forEach(w => lines.push(`- ${w}`));
         }
 
         return lines.join("\n").trim();
@@ -1313,9 +1581,34 @@
       });
 
       document.getElementById("addDetailPass").addEventListener("click", () => {
-        addDetailPassRow("", "", "");
+        addDetailPassRow("", "", "", true);
         scheduleAutosave();
         showFabStatus("Pass added", "info", 900);
+        triggerHaptic("light");
+      });
+
+      document.getElementById("duplicateLastPass").addEventListener("click", () => {
+        const passes = getRawDetailPasses();
+        const last = passes[passes.length - 1] || makePassRowData("", "", "");
+        addDetailPassRow(last.duration || "", last.angle || "", last.depth || "", true);
+        scheduleAutosave();
+        showFabStatus("Pass duplicated", "info", 900);
+        triggerHaptic("light");
+      });
+
+      document.getElementById("add30sPass").addEventListener("click", () => {
+        addDetailPassRow("00:30", "", "", true);
+        recalc();
+        scheduleAutosave();
+        showFabStatus("0:30 pass added", "info", 900);
+        triggerHaptic("light");
+      });
+
+      document.getElementById("add60sPass").addEventListener("click", () => {
+        addDetailPassRow("01:00", "", "", true);
+        recalc();
+        scheduleAutosave();
+        showFabStatus("1:00 pass added", "info", 900);
         triggerHaptic("light");
       });
 
@@ -1336,6 +1629,10 @@
 
       document.getElementById("newCase").addEventListener("click", () => {
         createNewCase();
+      });
+
+      document.getElementById("duplicateCase").addEventListener("click", () => {
+        duplicateCurrentCase();
       });
 
       document.getElementById("saveNow").addEventListener("click", () => {
@@ -1373,7 +1670,7 @@
       });
 
       function bootstrap(){
-        setCasesCollapsed(true);
+        setCasesCollapsed(getCasesCollapsed());
 
         const cases = getCases();
         const current = getActiveCase();
