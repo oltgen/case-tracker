@@ -5,10 +5,7 @@
   <meta name="theme-color" content="#0b1220">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Case Tracker</title>
   <meta
     name="description"
@@ -322,42 +319,6 @@
       .ac-detail-row{ grid-template-columns: 1fr; }
     }
 
-    .ac-photo-list{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 880px){
-      .ac-photo-list{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    .ac-photo-item{
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 10px;
-      background: rgba(0,0,0,.22);
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-    }
-
-    .ac-thumb{
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      border-radius: 10px;
-      object-fit: cover;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.25);
-    }
-
-    .ac-fn{
-      font-size: 12px;
-      color: rgba(255,255,255,.75);
-      word-break: break-word;
-    }
-
     .ac-fab-status{
       position: fixed;
       left: 50%;
@@ -403,6 +364,91 @@
       border-color: rgba(255,69,58,.35);
       background: rgba(56,24,22,.92);
     }
+
+    .ac-collapse-btn{
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .ac-collapse-icon{
+      font-size: 16px;
+      color: var(--muted);
+      transition: transform .18s ease;
+    }
+
+    .ac-collapse-btn[aria-expanded="true"] .ac-collapse-icon{
+      transform: rotate(180deg);
+    }
+
+    .ac-collapsible{
+      overflow: hidden;
+    }
+
+    .ac-collapsible[hidden]{
+      display: none;
+    }
+
+    .ac-inline-form{
+      display:grid;
+      gap: 12px;
+    }
+
+    .ac-inline-row{
+      display:grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 12px;
+      align-items:center;
+    }
+
+    .ac-inline-row label{
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .ac-inline-row input,
+    .ac-inline-row select{
+      width:100%;
+      box-sizing:border-box;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.28);
+      color: var(--text);
+      outline: none;
+    }
+
+    .ac-inline-row input:focus,
+    .ac-inline-row select:focus{
+      border-color: rgba(10,132,255,.65);
+      box-shadow: 0 0 0 4px rgba(10,132,255,.18);
+    }
+
+    @media (max-width: 880px){
+      .ac-inline-row{
+        grid-template-columns: 110px minmax(0, 1fr);
+      }
+    }
+
+    .ac-volume-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 880px){
+      .ac-volume-grid{
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -411,82 +457,79 @@
 
     <section class="ac-card ac-native-card">
       <div class="ac-card-h">
-        <h2>Cases</h2>
-        <div class="ac-metrics-inline">
-          <div class="ac-pill ac-pill-green">
-            <span class="k">Storage</span>
-            <span class="v">Local Auto-Save</span>
-          </div>
-        </div>
+        <button
+          id="casesCollapseBtn"
+          class="ac-collapse-btn"
+          type="button"
+          aria-expanded="false"
+          aria-controls="casesCollapseBody"
+        >
+          <h2>Cases</h2>
+          <span class="ac-collapse-icon">⌄</span>
+        </button>
       </div>
 
-      <div class="ac-grid-3">
-        <label class="ac-field">
-          <span>Case Name</span>
-          <input id="caseName" type="text" placeholder="Case name">
-        </label>
+      <div id="casesCollapseBody" class="ac-collapsible" hidden>
+        <div class="ac-grid-3">
+          <label class="ac-field">
+            <span>Case Name</span>
+            <input id="caseName" type="text" placeholder="Case name">
+          </label>
 
-        <label class="ac-field">
-          <span>Saved Cases</span>
-          <select id="savedCases"></select>
-        </label>
+          <label class="ac-field">
+            <span>Saved Cases</span>
+            <select id="savedCases"></select>
+          </label>
 
-        <div class="ac-field">
-          <span>Actions</span>
-          <div class="ac-actions">
-            <button id="newCase" type="button" class="ac-btn ac-btn-primary">New Case</button>
-            <button id="saveNow" type="button" class="ac-btn">Save Now</button>
-            <button id="deleteCase" type="button" class="ac-btn ac-btn-danger">Delete Case</button>
+          <div class="ac-field">
+            <span>Actions</span>
+            <div class="ac-actions">
+              <button id="newCase" type="button" class="ac-btn ac-btn-primary">New Case</button>
+              <button id="saveNow" type="button" class="ac-btn">Save Now</button>
+              <button id="deleteCase" type="button" class="ac-btn ac-btn-danger">Delete Case</button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="ac-help" style="margin-top:10px;">
-        All text, times, selections, notes, and pass rows save automatically on this device. Photos remain session-only and must be reselected after reload.
       </div>
     </section>
 
     <section class="ac-card ac-native-card">
-      <div class="ac-card-h"><h2>Patient & Setup</h2></div>
-      <div class="ac-grid">
-        <label class="ac-field">
-          <span>Surgeon</span>
+      <div class="ac-card-h"><h2>Patient &amp; Setup</h2></div>
+
+      <div class="ac-inline-form">
+        <div class="ac-inline-row">
+          <label for="surgeon">Surgeon</label>
           <input id="surgeon" type="text" placeholder="Surgeon (no patient name)">
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>Handpiece LOT #</span>
+        <div class="ac-inline-row">
+          <label for="handpieceLot">Handpiece LOT #</label>
           <input id="handpieceLot" type="text" placeholder="LOT #">
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>Procedure Type</span>
+        <div class="ac-inline-row">
+          <label for="procedureType">Procedure Type</label>
           <select id="procedureType">
             <option value="Aquabeam">Aquabeam</option>
             <option value="Hydros">Hydros</option>
           </select>
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>Date</span>
-          <input id="caseDate" type="date">
-        </label>
-
-        <div class="ac-field ac-time">
-          <span>Patient in Room</span>
+        <div class="ac-inline-row">
+          <label for="patientInRoom">Patient in Room</label>
           <div class="ac-time-row">
             <input id="patientInRoom" type="time">
             <button class="ac-now" type="button" data-now="patientInRoom">Now</button>
           </div>
         </div>
 
-        <label class="ac-field">
-          <span>Prostate Volume (Known, cc)</span>
+        <div class="ac-inline-row">
+          <label for="prostateVolumeKnown">Prostate Volume (Known, cc)</label>
           <input id="prostateVolumeKnown" type="number" step="0.1" min="0" placeholder="Optional">
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>Previous Procedures</span>
+        <div class="ac-inline-row">
+          <label for="prevProcedures">Previous Procedures</label>
           <select id="prevProcedures">
             <option value="NA" selected>NA</option>
             <option value="Greenlight">Greenlight</option>
@@ -498,20 +541,20 @@
             <option value="Other Non-Resective">Other Non-Resective</option>
             <option value="Other Resective">Other Resective</option>
           </select>
-        </label>
+        </div>
 
-        <label class="ac-field">
-          <span>Anesthesia</span>
+        <div class="ac-inline-row">
+          <label for="anesthesia">Anesthesia</label>
           <select id="anesthesia">
             <option value="General" selected>General</option>
             <option value="Spinal">Spinal</option>
           </select>
-        </label>
+        </div>
       </div>
     </section>
 
     <section class="ac-card ac-native-card">
-      <div class="ac-card-h"><h2>Imaging & Anatomy</h2></div>
+      <div class="ac-card-h"><h2>Imaging &amp; Anatomy</h2></div>
       <div class="ac-grid">
         <div class="ac-field ac-time">
           <span>TRUS in</span>
@@ -551,25 +594,23 @@
           <input id="ippMm" type="number" step="0.1" min="0" placeholder="IPP in mm">
         </label>
 
-        <label class="ac-field">
-          <span>Prostate Volume Method</span>
-          <select id="volMethod">
-            <option value="Known" selected>Known</option>
-            <option value="Ellipsoid">Ellipsoid (L×W×H×0.52)</option>
-            <option value="Bullet">Bullet (L×W×H×0.65)</option>
-          </select>
-        </label>
+        <div class="ac-volume-grid" style="grid-column: 1 / -1;">
+          <div class="ac-metric">
+            <div class="ac-metric-k">Ellipsoid Volume</div>
+            <div class="ac-metric-v" id="calcVolEllipsoid">—</div>
+          </div>
 
-        <div class="ac-metric">
-          <div class="ac-metric-k">Calculated Volume</div>
-          <div class="ac-metric-v" id="calcVol">—</div>
+          <div class="ac-metric">
+            <div class="ac-metric-k">Bullet Volume</div>
+            <div class="ac-metric-v" id="calcVolBullet">—</div>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="ac-card ac-native-card">
       <div class="ac-card-h">
-        <h2>Procedure & Timing</h2>
+        <h2>Procedure &amp; Timing</h2>
         <div class="ac-metrics-inline">
           <div class="ac-pill"><span class="k">AQUA Time</span><span class="v" id="aquaTimeLabel">00:00</span></div>
           <div class="ac-pill ac-pill-purple"><span class="k">TRUS → Cath</span><span class="v" id="trusCathLabel">00:00</span></div>
@@ -664,28 +705,9 @@
 
     <section class="ac-card ac-native-card">
       <div class="ac-card-h">
-        <h2>Photos</h2>
-        <div class="ac-actions">
-          <label class="ac-btn" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-            Add / Take Photos
-            <input id="photos" type="file" accept="image/*" capture="environment" multiple style="display:none;">
-          </label>
-          <button id="clearPhotos" type="button" class="ac-btn ac-btn-ghost">Clear</button>
-        </div>
-      </div>
-      <div class="ac-help" style="margin-top: 6px;">
-        Text Case opens a standard SMS draft with summary text only. Share Case can include selected photos when supported by your device/browser share sheet. Photos are not saved locally with the case record.
-      </div>
-      <div id="photoList" class="ac-photo-list"></div>
-    </section>
-
-    <section class="ac-card ac-native-card">
-      <div class="ac-card-h">
         <h2>Preview</h2>
         <div class="ac-actions">
           <button id="buildPreview" type="button" class="ac-btn ac-btn-primary">Build Preview</button>
-          <button id="textCase" type="button" class="ac-btn ac-btn-primary">Text Case</button>
-          <button id="shareCase" type="button" class="ac-btn ac-btn-primary">Share Case</button>
           <button id="copyCase" type="button" class="ac-btn">Copy</button>
         </div>
       </div>
@@ -706,17 +728,17 @@
       const caseNameEl = document.getElementById("caseName");
       const savedCasesEl = document.getElementById("savedCases");
       const detailPassesDiv = document.getElementById("detailPasses");
-      const photoListEl = document.getElementById("photoList");
-      const photosInput = document.getElementById("photos");
       const fabStatus = document.getElementById("fabStatus");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
       const resectionLabel = document.getElementById("resectionLabel");
-      const calcVolEl = document.getElementById("calcVol");
+      const calcVolEllipsoidEl = document.getElementById("calcVolEllipsoid");
+      const calcVolBulletEl = document.getElementById("calcVolBullet");
 
-      let selectedPhotos = [];
-      let selectedPhotoFiles = [];
+      const casesCollapseBtn = document.getElementById("casesCollapseBtn");
+      const casesCollapseBody = document.getElementById("casesCollapseBody");
+
       let activeCaseId = null;
       let suppressAutosave = false;
       let autosaveTimer = null;
@@ -748,12 +770,19 @@
         }, ms);
       }
 
-      function setStatus(msg, tone = "info", useFab = false){
+      function setStatus(msg){
         statusEl.textContent = msg || "";
-        if(useFab && msg){
-          showFabStatus(msg, tone);
-        }
       }
+
+      function setCasesCollapsed(collapsed){
+        casesCollapseBody.hidden = collapsed;
+        casesCollapseBtn.setAttribute("aria-expanded", String(!collapsed));
+      }
+
+      casesCollapseBtn.addEventListener("click", () => {
+        const expanded = casesCollapseBtn.getAttribute("aria-expanded") === "true";
+        setCasesCollapsed(expanded);
+      });
 
       function pad2(n){
         return String(n).padStart(2, "0");
@@ -838,58 +867,28 @@
         return fmtMmSs(Math.round(totalMinutes * 60));
       }
 
-      function computeVolume(){
-        const method = document.getElementById("volMethod").value;
+      function computeVolumes(){
         const knownTop = Number(document.getElementById("prostateVolumeKnown").value);
         const Lmm = Number(document.getElementById("lenMm").value);
         const Wmm = Number(document.getElementById("widMm").value);
         const Hmm = Number(document.getElementById("htMm").value);
 
-        if(method === "Known"){
-          if(Number.isFinite(knownTop) && knownTop > 0) return { volume: knownTop, method };
-          return { volume: null, method };
+        let ellipsoid = null;
+        let bullet = null;
+
+        if(Number.isFinite(Lmm) && Number.isFinite(Wmm) && Number.isFinite(Hmm) && Lmm > 0 && Wmm > 0 && Hmm > 0){
+          const L = Lmm / 10;
+          const W = Wmm / 10;
+          const H = Hmm / 10;
+          ellipsoid = L * W * H * 0.52;
+          bullet = L * W * H * 0.65;
         }
 
-        if(!Number.isFinite(Lmm) || !Number.isFinite(Wmm) || !Number.isFinite(Hmm) || Lmm <= 0 || Wmm <= 0 || Hmm <= 0){
-          return { volume: null, method };
-        }
-
-        const L = Lmm / 10;
-        const W = Wmm / 10;
-        const H = Hmm / 10;
-        const factor = method === "Ellipsoid" ? 0.52 : 0.65;
-        return { volume: L * W * H * factor, method };
-      }
-
-      function clearPhotosOnly(){
-        selectedPhotos.forEach(p => {
-          try { URL.revokeObjectURL(p.url); } catch(e) {}
-        });
-        selectedPhotos = [];
-        selectedPhotoFiles = [];
-        photosInput.value = "";
-        renderPhotos();
-      }
-
-      function renderPhotos(){
-        photoListEl.innerHTML = "";
-        selectedPhotos.forEach((p) => {
-          const item = document.createElement("div");
-          item.className = "ac-photo-item";
-
-          const img = document.createElement("img");
-          img.className = "ac-thumb";
-          img.src = p.url;
-          img.alt = "Selected photo";
-
-          const fn = document.createElement("div");
-          fn.className = "ac-fn";
-          fn.textContent = p.name;
-
-          item.appendChild(img);
-          item.appendChild(fn);
-          photoListEl.appendChild(item);
-        });
+        return {
+          known: Number.isFinite(knownTop) && knownTop > 0 ? knownTop : null,
+          ellipsoid,
+          bullet
+        };
       }
 
       function addDetailPassRow(duration="", angle="", depth=""){
@@ -979,8 +978,9 @@
         trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
         resectionLabel.textContent = fmtMinAsMmSs(resection);
 
-        const vol = computeVolume();
-        calcVolEl.textContent = (vol.volume != null) ? `${vol.volume.toFixed(1)} cc` : "—";
+        const vols = computeVolumes();
+        calcVolEllipsoidEl.textContent = vols.ellipsoid != null ? `${vols.ellipsoid.toFixed(1)} cc` : "—";
+        calcVolBulletEl.textContent = vols.bullet != null ? `${vols.bullet.toFixed(1)} cc` : "—";
       }
 
       function collectFormData(){
@@ -989,7 +989,6 @@
           surgeon: document.getElementById("surgeon").value || "",
           handpieceLot: document.getElementById("handpieceLot").value || "",
           procedureType: document.getElementById("procedureType").value || "Aquabeam",
-          caseDate: document.getElementById("caseDate").value || "",
           patientInRoom: document.getElementById("patientInRoom").value || "",
           prostateVolumeKnown: document.getElementById("prostateVolumeKnown").value || "",
           prevProcedures: document.getElementById("prevProcedures").value || "NA",
@@ -1000,7 +999,6 @@
           widMm: document.getElementById("widMm").value || "",
           htMm: document.getElementById("htMm").value || "",
           ippMm: document.getElementById("ippMm").value || "",
-          volMethod: document.getElementById("volMethod").value || "Known",
           hpIn: document.getElementById("hpIn").value || "",
           aquaStart: document.getElementById("aquaStart").value || "",
           hpOut: document.getElementById("hpOut").value || "",
@@ -1020,7 +1018,6 @@
         document.getElementById("surgeon").value = data.surgeon || "";
         document.getElementById("handpieceLot").value = data.handpieceLot || "";
         document.getElementById("procedureType").value = data.procedureType || "Aquabeam";
-        document.getElementById("caseDate").value = data.caseDate || "";
         document.getElementById("patientInRoom").value = data.patientInRoom || "";
         document.getElementById("prostateVolumeKnown").value = data.prostateVolumeKnown || "";
         document.getElementById("prevProcedures").value = data.prevProcedures || "NA";
@@ -1031,7 +1028,6 @@
         document.getElementById("widMm").value = data.widMm || "";
         document.getElementById("htMm").value = data.htMm || "";
         document.getElementById("ippMm").value = data.ippMm || "";
-        document.getElementById("volMethod").value = data.volMethod || "Known";
         document.getElementById("hpIn").value = data.hpIn || "";
         document.getElementById("aquaStart").value = data.aquaStart || "";
         document.getElementById("hpOut").value = data.hpOut || "";
@@ -1047,8 +1043,6 @@
           : [{ duration: "", angle: "", depth: "" }];
 
         passes.forEach(p => addDetailPassRow(p.duration || "", p.angle || "", p.depth || ""));
-
-        clearPhotosOnly();
         recalc();
 
         suppressAutosave = false;
@@ -1117,7 +1111,7 @@
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(() => {
           autosave();
-          setStatus("Auto-saved locally.", "success");
+          setStatus("Auto-saved locally.");
           showFabStatus("Auto-saved", "success", 1100);
         }, 250);
       }
@@ -1131,7 +1125,7 @@
         setActiveCase(found.id);
         applyFormData(found.data);
         refreshCaseList();
-        setStatus("Case loaded. Photos need to be reselected.", "info");
+        setStatus("Case loaded.");
         showFabStatus("Case loaded", "info");
         triggerHaptic("light");
       }
@@ -1145,7 +1139,6 @@
           surgeon: "",
           handpieceLot: "",
           procedureType: "Aquabeam",
-          caseDate: "",
           patientInRoom: "",
           prostateVolumeKnown: "",
           prevProcedures: "NA",
@@ -1156,7 +1149,6 @@
           widMm: "",
           htMm: "",
           ippMm: "",
-          volMethod: "Known",
           hpIn: "",
           aquaStart: "",
           hpOut: "",
@@ -1170,7 +1162,7 @@
 
         applyFormData(blank);
         autosave();
-        setStatus("New case created.", "success");
+        setStatus("New case created.");
         showFabStatus("New case created", "success");
         triggerHaptic("success");
       }
@@ -1178,7 +1170,7 @@
       function deleteCurrentCase(){
         const current = activeCaseId || getActiveCase();
         if(!current){
-          setStatus("No case selected.", "warn");
+          setStatus("No case selected.");
           showFabStatus("No case selected", "warn");
           return;
         }
@@ -1193,12 +1185,12 @@
           setActiveCase(next.id);
           applyFormData(next.data);
           refreshCaseList();
-          setStatus("Case deleted.", "warn");
+          setStatus("Case deleted.");
         } else {
           activeCaseId = null;
           setActiveCase("");
           createNewCase();
-          setStatus("Case deleted. New case created.", "warn");
+          setStatus("Case deleted. New case created.");
         }
 
         showFabStatus("Case deleted", "warn");
@@ -1220,13 +1212,12 @@
           parseTimeToMinutes(data.cathIn)
         );
 
-        const vol = computeVolume();
+        const vols = computeVolumes();
         const lines = [];
 
         lines.push("Case Tracker Case Summary");
         if((data.caseName || "").trim()) lines.push(`Case Name: ${data.caseName.trim()}`);
         if(data.procedureType) lines.push(`Procedure Type: ${data.procedureType}`);
-        if(data.caseDate) lines.push(`Date: ${data.caseDate}`);
 
         lines.push("");
         lines.push("Patient & Setup");
@@ -1245,9 +1236,8 @@
         if(data.widMm) lines.push(`W (mm): ${data.widMm}`);
         if(data.htMm) lines.push(`H (mm): ${data.htMm}`);
         if(data.ippMm) lines.push(`IPP (mm): ${data.ippMm}`);
-        if(vol.volume != null){
-          lines.push(`Prostate Volume (Calc): ${vol.volume.toFixed(1)} cc (${vol.method})`);
-        }
+        if(vols.ellipsoid != null) lines.push(`Ellipsoid Volume: ${vols.ellipsoid.toFixed(1)} cc`);
+        if(vols.bullet != null) lines.push(`Bullet Volume: ${vols.bullet.toFixed(1)} cc`);
 
         lines.push("");
         lines.push("Procedure & Timing");
@@ -1278,12 +1268,6 @@
         if(data.caseColor) lines.push(`Color: ${data.caseColor}`);
         if(data.outOfRoom) lines.push(`Out of Room: ${data.outOfRoom}`);
 
-        if(selectedPhotos.length){
-          lines.push("");
-          lines.push("Photos selected");
-          selectedPhotos.forEach((p, idx) => lines.push(`${idx + 1}) ${p.name}`));
-        }
-
         if(data.notes){
           lines.push("");
           lines.push("Notes");
@@ -1293,62 +1277,12 @@
         return lines.join("\n").trim();
       }
 
-      function openSmsComposer(bodyText){
-        const encoded = encodeURIComponent(bodyText);
-        window.location.href = `sms:&body=${encoded}`;
-      }
-
       async function copyText(text){
         try{
           await navigator.clipboard.writeText(text);
           return true;
         } catch {
           return false;
-        }
-      }
-
-      async function shareCase(summary){
-        if(!navigator.share){
-          setStatus("Native sharing is not supported on this browser. Use Copy or Text Case.", "warn");
-          showFabStatus("Sharing unavailable", "warn");
-          return;
-        }
-
-        try{
-          const shareData = {
-            title: "Case Tracker",
-            text: summary
-          };
-
-          if(selectedPhotoFiles.length && navigator.canShare){
-            const fileShareData = {
-              title: "Case Tracker",
-              text: summary,
-              files: selectedPhotoFiles
-            };
-
-            if(navigator.canShare(fileShareData)){
-              await navigator.share(fileShareData);
-              setStatus("Shared.", "success");
-              showFabStatus("Shared", "success");
-              triggerHaptic("success");
-              return;
-            }
-          }
-
-          await navigator.share(shareData);
-          setStatus("Shared.", "success");
-          showFabStatus("Shared", "success");
-          triggerHaptic("success");
-        } catch (err){
-          if(err && err.name === "AbortError"){
-            setStatus("Share cancelled.", "warn");
-            showFabStatus("Share cancelled", "warn");
-          } else {
-            setStatus("Share failed on this device/browser. Use Copy or Text Case.", "error");
-            showFabStatus("Share failed", "error");
-            triggerHaptic("error");
-          }
         }
       }
 
@@ -1394,26 +1328,6 @@
         triggerHaptic("warning");
       });
 
-      photosInput.addEventListener("change", () => {
-        clearPhotosOnly();
-
-        selectedPhotoFiles = Array.from(photosInput.files || []);
-        selectedPhotos = selectedPhotoFiles.map(f => ({
-          name: f.name || "photo.jpg",
-          url: URL.createObjectURL(f)
-        }));
-
-        renderPhotos();
-        setStatus("Photos selected for this session.", "info");
-        showFabStatus("Photos selected", "info");
-      });
-
-      document.getElementById("clearPhotos").addEventListener("click", () => {
-        clearPhotosOnly();
-        setStatus("Photos cleared.", "info");
-        showFabStatus("Photos cleared", "info");
-      });
-
       savedCasesEl.addEventListener("change", () => {
         if(savedCasesEl.value){
           loadCase(savedCasesEl.value);
@@ -1426,7 +1340,7 @@
 
       document.getElementById("saveNow").addEventListener("click", () => {
         autosave();
-        setStatus("Saved locally.", "success");
+        setStatus("Saved locally.");
         showFabStatus("Saved", "success");
         triggerHaptic("success");
       });
@@ -1438,7 +1352,7 @@
       document.getElementById("buildPreview").addEventListener("click", () => {
         const summary = buildSummary();
         previewEl.value = summary;
-        setStatus("Preview built.", "info");
+        setStatus("Preview built.");
         showFabStatus("Preview built", "info");
         triggerHaptic("light");
       });
@@ -1448,42 +1362,19 @@
         previewEl.value = summary;
         const ok = await copyText(summary);
         if(ok){
-          setStatus("Copied.", "success");
+          setStatus("Copied.");
           showFabStatus("Copied", "success");
           triggerHaptic("success");
         } else {
-          setStatus("Copy blocked by browser. Manually copy from the preview box.", "warn");
+          setStatus("Copy blocked by browser. Manually copy from the preview box.");
           showFabStatus("Copy blocked", "warn");
           triggerHaptic("warning");
         }
       });
 
-      document.getElementById("textCase").addEventListener("click", () => {
-        const summary = buildSummary();
-        previewEl.value = summary;
-        if(!summary.trim()){
-          setStatus("Nothing to send.", "warn");
-          showFabStatus("Nothing to send", "warn");
-          return;
-        }
-        setStatus("Opening Messages.", "info");
-        showFabStatus("Opening Messages", "info");
-        triggerHaptic("light");
-        openSmsComposer(summary);
-      });
-
-      document.getElementById("shareCase").addEventListener("click", async () => {
-        const summary = buildSummary();
-        previewEl.value = summary;
-        if(!summary.trim()){
-          setStatus("Nothing to share.", "warn");
-          showFabStatus("Nothing to share", "warn");
-          return;
-        }
-        await shareCase(summary);
-      });
-
       function bootstrap(){
+        setCasesCollapsed(true);
+
         const cases = getCases();
         const current = getActiveCase();
 
@@ -1493,7 +1384,7 @@
           setActiveCase(found.id);
           applyFormData(found.data);
           refreshCaseList();
-          setStatus("Loaded saved case.", "info");
+          setStatus("Loaded saved case.");
         } else {
           createNewCase();
         }
