@@ -339,6 +339,13 @@
       line-height: 1.35;
     }
 
+    .ac-scan-status{
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 16px;
+    }
+
     .ac-notes,
     .ac-preview{
       width:100%;
@@ -551,14 +558,27 @@
 
         <div class="ac-row">
           <div class="ac-label">Handpiece LOT #</div>
-          <input id="handpieceLot" class="ac-input" type="text" placeholder="LOT #">
+          <div>
+            <div class="ac-actions compact">
+              <input id="handpieceLot" class="ac-input" type="text" placeholder="LOT #" style="flex:1; min-width:0;">
+              <button id="scanLotBtn" type="button" class="ac-btn">Scan LOT #</button>
+            </div>
+            <div id="lotScanStatus" class="ac-scan-status"></div>
+            <input
+              id="lotCameraInput"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style="display:none;"
+            >
+          </div>
         </div>
 
         <div class="ac-row">
           <div class="ac-label">Procedure Type</div>
           <select id="procedureType" class="ac-select">
             <option value="Aquabeam">Aquabeam</option>
-            <option value="Hydros">Hydros</option>
+            <option value="Hydros" selected>Hydros</option>
           </select>
         </div>
 
@@ -753,6 +773,8 @@
 
   <div id="fabStatus" class="ac-fab-status info">Saved</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <script>
     (function(){
       const STORAGE_KEY = "case-tracker-cases";
@@ -764,6 +786,11 @@
       const savedCasesEl = document.getElementById("savedCases");
       const detailPassesDiv = document.getElementById("detailPasses");
       const fabStatus = document.getElementById("fabStatus");
+
+      const handpieceLotEl = document.getElementById("handpieceLot");
+      const scanLotBtn = document.getElementById("scanLotBtn");
+      const lotCameraInput = document.getElementById("lotCameraInput");
+      const lotScanStatusEl = document.getElementById("lotScanStatus");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
@@ -778,6 +805,7 @@
       let suppressAutosave = false;
       let autosaveTimer = null;
       let fabStatusTimer = null;
+      let isScanningLot = false;
 
       function triggerHaptic(type = "light"){
         if(!("vibrate" in navigator)) return;
@@ -807,6 +835,10 @@
 
       function setStatus(msg){
         statusEl.textContent = msg || "";
+      }
+
+      function setLotScanStatus(msg){
+        lotScanStatusEl.textContent = msg || "";
       }
 
       function setCasesCollapsed(collapsed){
@@ -924,6 +956,63 @@
           ellipsoid,
           bullet
         };
+      }
+
+      function cleanLotText(raw){
+        if(!raw) return "";
+        return raw
+          .toUpperCase()
+          .replace(/\s+/g, "")
+          .replace(/[^A-Z0-9\-]/g, "")
+          .trim();
+      }
+
+      async function scanLotFromImage(file){
+        if (!window.Tesseract) {
+          throw new Error("OCR library failed to load.");
+        }
+
+        const result = await window.Tesseract.recognize(file, "eng", {
+          logger: () => {}
+        });
+
+        const rawText = result?.data?.text || "";
+        const cleaned = cleanLotText(rawText);
+
+        if (!cleaned) {
+          throw new Error("Could not read a LOT number from the image.");
+        }
+
+        return cleaned;
+      }
+
+      async function handleLotImage(file){
+        if (!file || isScanningLot) return;
+
+        try{
+          isScanningLot = true;
+          scanLotBtn.disabled = true;
+          setLotScanStatus("Reading LOT # from image...");
+          showFabStatus("Scanning LOT #", "info", 1200);
+
+          const scannedText = await scanLotFromImage(file);
+          handpieceLotEl.value = scannedText;
+          recalc();
+          scheduleAutosave();
+
+          setLotScanStatus(`LOT detected: ${scannedText}`);
+          showFabStatus("LOT scanned", "success");
+          triggerHaptic("success");
+        } catch (error){
+          console.error(error);
+          setLotScanStatus(error.message || "Could not read LOT #.");
+          showFabStatus("LOT scan failed", "warn");
+          triggerHaptic("warning");
+        } finally {
+          scanLotBtn.disabled = false;
+          lotCameraInput.value = "";
+          isScanningLot = false;
+        }
       }
 
       function addDetailPassRow(duration="", angle="", depth=""){
@@ -1046,7 +1135,7 @@
           caseName: caseNameEl.value || "",
           surgeon: document.getElementById("surgeon").value || "",
           handpieceLot: document.getElementById("handpieceLot").value || "",
-          procedureType: document.getElementById("procedureType").value || "Aquabeam",
+          procedureType: document.getElementById("procedureType").value || "Hydros",
           patientInRoom: document.getElementById("patientInRoom").value || "",
           prostateVolumeKnown: document.getElementById("prostateVolumeKnown").value || "",
           prevProcedures: document.getElementById("prevProcedures").value || "NA",
@@ -1075,7 +1164,7 @@
         caseNameEl.value = data.caseName || "";
         document.getElementById("surgeon").value = data.surgeon || "";
         document.getElementById("handpieceLot").value = data.handpieceLot || "";
-        document.getElementById("procedureType").value = data.procedureType || "Aquabeam";
+        document.getElementById("procedureType").value = data.procedureType || "Hydros";
         document.getElementById("patientInRoom").value = data.patientInRoom || "";
         document.getElementById("prostateVolumeKnown").value = data.prostateVolumeKnown || "";
         document.getElementById("prevProcedures").value = data.prevProcedures || "NA";
@@ -1196,7 +1285,7 @@
           caseName: defaultCaseName(),
           surgeon: "",
           handpieceLot: "",
-          procedureType: "Aquabeam",
+          procedureType: "Hydros",
           patientInRoom: "",
           prostateVolumeKnown: "",
           prevProcedures: "NA",
@@ -1340,6 +1429,19 @@
         }
       }
 
+      scanLotBtn.addEventListener("click", () => {
+        if (isScanningLot) return;
+        setLotScanStatus("Open camera and take a clear photo of the LOT #.");
+        lotCameraInput.click();
+      });
+
+      lotCameraInput.addEventListener("change", async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (file) {
+          await handleLotImage(file);
+        }
+      });
+
       document.querySelectorAll("[data-now]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-now");
@@ -1354,7 +1456,7 @@
       });
 
       document.querySelectorAll("input, select, textarea").forEach(el => {
-        if(el.id !== "savedCases"){
+        if(el.id !== "savedCases" && el.id !== "lotCameraInput"){
           el.addEventListener("input", () => {
             recalc();
             scheduleAutosave();
