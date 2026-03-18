@@ -1,4 +1,4 @@
-generate me a brand new full index.html code.  here is the current.  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <link rel="manifest" href="manifest.json">
@@ -208,6 +208,22 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
       padding: 8px 12px;
     }
 
+    .ac-row-lot{
+      align-items: start;
+    }
+
+    .ac-lot-wrap{
+      display: grid;
+      gap: 8px;
+    }
+
+    .ac-lot-controls{
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
     .ac-pill{
       display:flex;
       align-items:center;
@@ -337,6 +353,12 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
       font-size: 12px;
       color: var(--muted);
       line-height: 1.35;
+    }
+
+    .ac-scan-status{
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 16px;
     }
 
     .ac-notes,
@@ -495,6 +517,10 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
       .ac-now{
         min-height: 44px;
       }
+
+      .ac-lot-controls{
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -549,16 +575,23 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
           <input id="surgeon" class="ac-input" type="text" placeholder="Surgeon">
         </div>
 
-        <div class="ac-row">
+        <div class="ac-row ac-row-lot">
           <div class="ac-label">Handpiece LOT #</div>
-          <input id="handpieceLot" class="ac-input" type="text" placeholder="LOT #">
+          <div class="ac-lot-wrap">
+            <div class="ac-lot-controls">
+              <input id="handpieceLot" class="ac-input" type="text" placeholder="LOT #">
+              <button id="scanLotBtn" type="button" class="ac-btn">Scan LOT #</button>
+            </div>
+            <div id="lotScanStatus" class="ac-scan-status"></div>
+            <input id="lotCameraInput" type="file" accept="image/*" capture="environment" hidden>
+          </div>
         </div>
 
         <div class="ac-row">
           <div class="ac-label">Procedure Type</div>
           <select id="procedureType" class="ac-select">
             <option value="Aquabeam">Aquabeam</option>
-            <option value="Hydros">Hydros</option>
+            <option value="Hydros" selected>Hydros</option>
           </select>
         </div>
 
@@ -753,6 +786,8 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
 
   <div id="fabStatus" class="ac-fab-status info">Saved</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <script>
     (function(){
       const STORAGE_KEY = "case-tracker-cases";
@@ -764,6 +799,10 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
       const savedCasesEl = document.getElementById("savedCases");
       const detailPassesDiv = document.getElementById("detailPasses");
       const fabStatus = document.getElementById("fabStatus");
+      const handpieceLotEl = document.getElementById("handpieceLot");
+      const scanLotBtn = document.getElementById("scanLotBtn");
+      const lotCameraInput = document.getElementById("lotCameraInput");
+      const lotScanStatusEl = document.getElementById("lotScanStatus");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
@@ -778,6 +817,7 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
       let suppressAutosave = false;
       let autosaveTimer = null;
       let fabStatusTimer = null;
+      let isScanningLot = false;
 
       function triggerHaptic(type = "light"){
         if(!("vibrate" in navigator)) return;
@@ -807,6 +847,10 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
 
       function setStatus(msg){
         statusEl.textContent = msg || "";
+      }
+
+      function setLotScanStatus(msg){
+        lotScanStatusEl.textContent = msg || "";
       }
 
       function setCasesCollapsed(collapsed){
@@ -924,6 +968,157 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
           ellipsoid,
           bullet
         };
+      }
+
+      function cleanLotText(raw){
+        if(!raw) return "";
+        return raw
+          .toUpperCase()
+          .replace(/[|]/g, "I")
+          .replace(/\s+/g, "")
+          .replace(/[^A-Z0-9\-]/g, "")
+          .trim();
+      }
+
+      function isLikelyDateToken(token){
+        if(!token) return false;
+        if (/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(token)) return true;
+        if (/^\d{6,8}$/.test(token)) return true;
+        if (/^(19|20)\d{2}$/.test(token)) return true;
+        return false;
+      }
+
+      function scoreLotCandidate(token, contextText = ""){
+        if(!token) return -999;
+
+        const banned = new Set([
+          "LOT", "REF", "EXP", "STERILE", "SN", "SNR", "MODEL", "SIZE",
+          "USEBY", "MFD", "DATE", "QTY", "HANDPIECE", "HYDROS", "AQUABEAM"
+        ]);
+
+        if (banned.has(token)) return -999;
+        if (token.length < 5 || token.length > 20) return -999;
+        if (isLikelyDateToken(token)) return -999;
+        if (!/[A-Z]/.test(token) && !/\d/.test(token)) return -999;
+
+        let score = 0;
+
+        if (/[A-Z]/.test(token)) score += 2;
+        if (/\d/.test(token)) score += 2;
+        if (/^[A-Z0-9\-]+$/.test(token)) score += 3;
+        if (/^[A-Z0-9]+$/.test(token)) score += 2;
+        if (token.includes("-")) score += 1;
+
+        const alphaNumLength = token.replace(/-/g, "").length;
+        if (alphaNumLength >= 6 && alphaNumLength <= 14) score += 3;
+
+        const letters = (token.match(/[A-Z]/g) || []).length;
+        const digits = (token.match(/\d/g) || []).length;
+
+        if (letters >= 2) score += 2;
+        if (digits >= 2) score += 2;
+
+        if (contextText.includes("LOT")) score += 4;
+        if (/^(REF|EXP|SN|SIZE|QTY)/.test(token)) score -= 10;
+
+        return score;
+      }
+
+      function extractLotCandidate(rawText){
+        const upper = (rawText || "").toUpperCase();
+        const normalizedForContext = upper.replace(/[\r\n\t]+/g, " ");
+        const lotMatch = normalizedForContext.match(/LOT[^A-Z0-9]{0,6}([A-Z0-9\- ]{4,24})/);
+
+        const candidates = [];
+
+        if (lotMatch && lotMatch[1]) {
+          const nearLot = lotMatch[1]
+            .split(/[^A-Z0-9\-]+/)
+            .map(cleanLotText)
+            .filter(Boolean);
+
+          nearLot.forEach(token => {
+            candidates.push({
+              token,
+              score: scoreLotCandidate(token, "LOT")
+            });
+          });
+        }
+
+        const allTokens = upper
+          .split(/[^A-Z0-9\-]+/)
+          .map(cleanLotText)
+          .filter(Boolean);
+
+        allTokens.forEach(token => {
+          candidates.push({
+            token,
+            score: scoreLotCandidate(token, upper)
+          });
+        });
+
+        const unique = new Map();
+        candidates.forEach(item => {
+          if (!unique.has(item.token) || unique.get(item.token).score < item.score) {
+            unique.set(item.token, item);
+          }
+        });
+
+        const ranked = Array.from(unique.values())
+          .filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score);
+
+        return ranked.length ? ranked[0].token : "";
+      }
+
+      async function scanLotFromImage(file){
+        if (!window.Tesseract) {
+          throw new Error("OCR library failed to load.");
+        }
+
+        const result = await window.Tesseract.recognize(file, "eng", {
+          logger: () => {}
+        });
+
+        const rawText = result?.data?.text || "";
+        const extracted = extractLotCandidate(rawText);
+
+        if (!extracted) {
+          throw new Error("Could not confidently identify a LOT number.");
+        }
+
+        return extracted;
+      }
+
+      async function handleLotImage(file){
+        if (!file || isScanningLot) return;
+
+        try{
+          isScanningLot = true;
+          scanLotBtn.disabled = true;
+          setLotScanStatus("Reading LOT # from image...");
+          showFabStatus("Scanning LOT #", "info", 1200);
+
+          const scannedText = await scanLotFromImage(file);
+          handpieceLotEl.value = scannedText;
+          recalc();
+          scheduleAutosave();
+
+          setLotScanStatus(`LOT detected: ${scannedText}`);
+          setStatus("LOT scanned.");
+          showFabStatus("LOT scanned", "success");
+          triggerHaptic("success");
+        } catch (error){
+          console.error(error);
+          setLotScanStatus(error.message || "Could not read LOT #.");
+          setStatus("LOT scan failed.");
+          showFabStatus("LOT scan failed", "warn");
+          triggerHaptic("warning");
+        } finally {
+          scanLotBtn.disabled = false;
+          lotCameraInput.value = "";
+          isScanningLot = false;
+        }
       }
 
       function addDetailPassRow(duration="", angle="", depth=""){
@@ -1046,7 +1241,7 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
           caseName: caseNameEl.value || "",
           surgeon: document.getElementById("surgeon").value || "",
           handpieceLot: document.getElementById("handpieceLot").value || "",
-          procedureType: document.getElementById("procedureType").value || "Aquabeam",
+          procedureType: document.getElementById("procedureType").value || "Hydros",
           patientInRoom: document.getElementById("patientInRoom").value || "",
           prostateVolumeKnown: document.getElementById("prostateVolumeKnown").value || "",
           prevProcedures: document.getElementById("prevProcedures").value || "NA",
@@ -1075,7 +1270,7 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
         caseNameEl.value = data.caseName || "";
         document.getElementById("surgeon").value = data.surgeon || "";
         document.getElementById("handpieceLot").value = data.handpieceLot || "";
-        document.getElementById("procedureType").value = data.procedureType || "Aquabeam";
+        document.getElementById("procedureType").value = data.procedureType || "Hydros";
         document.getElementById("patientInRoom").value = data.patientInRoom || "";
         document.getElementById("prostateVolumeKnown").value = data.prostateVolumeKnown || "";
         document.getElementById("prevProcedures").value = data.prevProcedures || "NA";
@@ -1094,6 +1289,7 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
         document.getElementById("caseColor").value = data.caseColor || "Light Pink";
         document.getElementById("outOfRoom").value = data.outOfRoom || "";
         document.getElementById("notes").value = data.notes || "";
+        setLotScanStatus("");
 
         detailPassesDiv.innerHTML = "";
         const passes = Array.isArray(data.detailPasses) && data.detailPasses.length
@@ -1196,7 +1392,7 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
           caseName: defaultCaseName(),
           surgeon: "",
           handpieceLot: "",
-          procedureType: "Aquabeam",
+          procedureType: "Hydros",
           patientInRoom: "",
           prostateVolumeKnown: "",
           prevProcedures: "NA",
@@ -1340,6 +1536,19 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
         }
       }
 
+      scanLotBtn.addEventListener("click", () => {
+        if (isScanningLot) return;
+        setLotScanStatus("Open camera and take a clear photo of the LOT #.");
+        lotCameraInput.click();
+      });
+
+      lotCameraInput.addEventListener("change", async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (file) {
+          await handleLotImage(file);
+        }
+      });
+
       document.querySelectorAll("[data-now]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-now");
@@ -1354,7 +1563,7 @@ generate me a brand new full index.html code.  here is the current.  <!DOCTYPE h
       });
 
       document.querySelectorAll("input, select, textarea").forEach(el => {
-        if(el.id !== "savedCases"){
+        if(el.id !== "savedCases" && el.id !== "lotCameraInput"){
           el.addEventListener("input", () => {
             recalc();
             scheduleAutosave();
