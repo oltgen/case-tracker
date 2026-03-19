@@ -55,6 +55,10 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
+    [hidden]{
+      display: none !important;
+    }
+
     .ac-page{
       width: 100%;
       padding: 12px 12px 44px;
@@ -111,9 +115,9 @@
 
     .ac-row-metric{
       display:grid;
-      grid-template-columns: var(--label-width) minmax(0,1fr) minmax(0,1fr);
+      grid-template-columns: var(--label-width) minmax(0,1fr);
       gap: 10px;
-      align-items:stretch;
+      align-items:start;
     }
 
     .ac-label{
@@ -347,18 +351,6 @@
       padding-top: 2px;
     }
 
-    .ac-detail-actions{
-      display:flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .ac-help{
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
     .ac-scan-status{
       font-size: 12px;
       color: var(--muted);
@@ -470,10 +462,6 @@
       overflow: hidden;
     }
 
-    .ac-collapsible[hidden]{
-      display: none;
-    }
-
     @media (max-width: 880px){
       :root{
         --label-width: 112px;
@@ -490,14 +478,6 @@
 
       .ac-totals{
         grid-template-columns: 1fr;
-      }
-
-      .ac-row-metric{
-        grid-template-columns: var(--label-width) minmax(0,1fr);
-      }
-
-      .ac-row-metric .ac-volume-grid{
-        grid-column: 1 / -1;
       }
 
       .ac-volume-grid{
@@ -984,7 +964,7 @@
           .toUpperCase()
           .replace(/[|]/g, "I")
           .replace(/\s+/g, "")
-          .replace(/[^A-Z0-9\-]/g, "")
+          .replace(/[^A-Z0-9-]/g, "")
           .trim();
       }
 
@@ -1013,7 +993,7 @@
 
         if (/[A-Z]/.test(token)) score += 2;
         if (/\d/.test(token)) score += 2;
-        if (/^[A-Z0-9\-]+$/.test(token)) score += 3;
+        if (/^[A-Z0-9-]+$/.test(token)) score += 3;
         if (/^[A-Z0-9]+$/.test(token)) score += 2;
         if (token.includes("-")) score += 1;
 
@@ -1041,7 +1021,7 @@
 
         if (lotMatch && lotMatch[1]) {
           const nearLot = lotMatch[1]
-            .split(/[^A-Z0-9\-]+/)
+            .split(/[^A-Z0-9-]+/)
             .map(cleanLotText)
             .filter(Boolean);
 
@@ -1054,7 +1034,7 @@
         }
 
         const allTokens = upper
-          .split(/[^A-Z0-9\-]+/)
+          .split(/[^A-Z0-9-]+/)
           .map(cleanLotText)
           .filter(Boolean);
 
@@ -1238,7 +1218,7 @@
       }
 
       function getRawDetailPasses(){
-        return Array.from(document.querySelectorAll(".ac-detail-card")).map(row => ({
+        return Array.from(detailPassesDiv.querySelectorAll(".ac-detail-card")).map(row => ({
           duration: row.querySelector(".detailDur")?.value || "",
           angle: row.querySelector(".detailAngle")?.value || "",
           depth: row.querySelector(".detailDepth")?.value || "",
@@ -1274,9 +1254,9 @@
         trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
         resectionLabel.textContent = fmtMinAsMmSs(resection);
 
-        const lenVal = document.getElementById("lenMm").value.trim();
-        const widVal = document.getElementById("widMm").value.trim();
-        const htVal = document.getElementById("htMm").value.trim();
+        const lenVal = (document.getElementById("lenMm").value || "").trim();
+        const widVal = (document.getElementById("widMm").value || "").trim();
+        const htVal = (document.getElementById("htMm").value || "").trim();
         const hasAnyDimension = !!(lenVal || widVal || htVal);
 
         calculatedVolumesRow.hidden = !hasAnyDimension;
