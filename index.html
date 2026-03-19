@@ -258,7 +258,6 @@
       display:grid;
       grid-template-columns: repeat(3, minmax(0,1fr));
       gap: 8px;
-      margin-bottom: 8px;
     }
 
     .ac-volume-grid{
@@ -312,7 +311,7 @@
 
     .ac-detail-top{
       display:grid;
-      grid-template-columns: 76px minmax(0,1fr) minmax(0,1fr) 88px;
+      grid-template-columns: 76px minmax(0,1fr) auto auto;
       gap: 8px;
       align-items:center;
     }
@@ -341,6 +340,12 @@
       color: var(--text);
       outline:none;
       font: inherit;
+    }
+
+    .ac-detail-sub{
+      display:grid;
+      gap: 8px;
+      padding-top: 2px;
     }
 
     .ac-detail-actions{
@@ -671,7 +676,7 @@
           <input id="ippMm" class="ac-input" type="number" step="0.1" min="0" placeholder="IPP">
         </div>
 
-        <div class="ac-row-metric">
+        <div class="ac-row-metric" id="calculatedVolumesRow" hidden>
           <div class="ac-label">Calculated Volumes</div>
           <div class="ac-volume-grid">
             <div class="ac-metric">
@@ -690,21 +695,6 @@
 
     <section class="ac-card">
       <div class="ac-card-h"><h2>Procedure &amp; Timing</h2></div>
-
-      <div class="ac-totals">
-        <div class="ac-pill">
-          <span class="k">AQUA Time</span>
-          <span class="v" id="aquaTimeLabel">00:00</span>
-        </div>
-        <div class="ac-pill ac-pill-purple">
-          <span class="k">TRUS → Cath</span>
-          <span class="v" id="trusCathLabel">00:00</span>
-        </div>
-        <div class="ac-pill ac-pill-orange">
-          <span class="k">Resection</span>
-          <span class="v" id="resectionLabel">00:00</span>
-        </div>
-      </div>
 
       <div class="ac-inline-form">
         <div class="ac-row-time">
@@ -772,6 +762,24 @@
     </section>
 
     <section class="ac-card">
+      <div class="ac-card-h"><h2>Totals</h2></div>
+      <div class="ac-totals">
+        <div class="ac-pill">
+          <span class="k">AQUA Time</span>
+          <span class="v" id="aquaTimeLabel">00:00</span>
+        </div>
+        <div class="ac-pill ac-pill-purple">
+          <span class="k">TRUS → Cath</span>
+          <span class="v" id="trusCathLabel">00:00</span>
+        </div>
+        <div class="ac-pill ac-pill-orange">
+          <span class="k">Resection</span>
+          <span class="v" id="resectionLabel">00:00</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="ac-card">
       <div class="ac-card-h">
         <h2>Preview</h2>
         <div class="ac-actions compact">
@@ -803,6 +811,7 @@
       const scanLotBtn = document.getElementById("scanLotBtn");
       const lotCameraInput = document.getElementById("lotCameraInput");
       const lotScanStatusEl = document.getElementById("lotScanStatus");
+      const calculatedVolumesRow = document.getElementById("calculatedVolumesRow");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
@@ -1121,7 +1130,7 @@
         }
       }
 
-      function addDetailPassRow(duration="", angle="", depth=""){
+      function addDetailPassRow(duration="", angle="", depth="", detailsOpen=false){
         const row = document.createElement("div");
         row.className = "ac-detail-card";
 
@@ -1142,29 +1151,10 @@
           scheduleAutosave();
         });
 
-        const ang = document.createElement("input");
-        ang.type = "text";
-        ang.placeholder = "Angle";
-        ang.value = angle;
-        ang.className = "ac-detail-input detailAngle";
-        ang.addEventListener("input", scheduleAutosave);
-
-        const dep = document.createElement("input");
-        dep.type = "number";
-        dep.placeholder = "Depth";
-        dep.step = "0.1";
-        dep.min = "0";
-        dep.value = depth;
-        dep.className = "ac-detail-input detailDepth";
-        dep.addEventListener("input", scheduleAutosave);
-
-        top.appendChild(badge);
-        top.appendChild(dur);
-        top.appendChild(ang);
-        top.appendChild(dep);
-
-        const actions = document.createElement("div");
-        actions.className = "ac-detail-actions";
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "ac-btn ac-btn-ghost";
+        toggleBtn.textContent = detailsOpen ? "Hide Details" : "Add Details";
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
@@ -1174,15 +1164,49 @@
           row.remove();
           renumberPasses();
           if(!detailPassesDiv.children.length){
-            addDetailPassRow("", "", "");
+            addDetailPassRow("", "", "", false);
           }
           recalc();
           scheduleAutosave();
         });
 
-        actions.appendChild(removeBtn);
+        top.appendChild(badge);
+        top.appendChild(dur);
+        top.appendChild(toggleBtn);
+        top.appendChild(removeBtn);
+
+        const details = document.createElement("div");
+        details.className = "ac-detail-sub";
+        details.hidden = !detailsOpen;
+
+        const angleRow = document.createElement("div");
+        angleRow.className = "ac-row";
+        angleRow.innerHTML = `
+          <div class="ac-label">Angle</div>
+          <input type="text" class="ac-detail-input detailAngle" placeholder="Angle" value="${String(angle).replace(/"/g, '&quot;')}">
+        `;
+
+        const depthRow = document.createElement("div");
+        depthRow.className = "ac-row";
+        depthRow.innerHTML = `
+          <div class="ac-label">Depth</div>
+          <input type="number" step="0.1" min="0" class="ac-detail-input detailDepth" placeholder="Depth" value="${String(depth).replace(/"/g, '&quot;')}">
+        `;
+
+        details.appendChild(angleRow);
+        details.appendChild(depthRow);
+
+        toggleBtn.addEventListener("click", () => {
+          details.hidden = !details.hidden;
+          toggleBtn.textContent = details.hidden ? "Add Details" : "Hide Details";
+          scheduleAutosave();
+        });
+
+        details.querySelector(".detailAngle").addEventListener("input", scheduleAutosave);
+        details.querySelector(".detailDepth").addEventListener("input", scheduleAutosave);
+
         row.appendChild(top);
-        row.appendChild(actions);
+        row.appendChild(details);
         detailPassesDiv.appendChild(row);
 
         renumberPasses();
@@ -1199,7 +1223,8 @@
         return Array.from(document.querySelectorAll(".ac-detail-card")).map(row => ({
           duration: row.querySelector(".detailDur")?.value || "",
           angle: row.querySelector(".detailAngle")?.value || "",
-          depth: row.querySelector(".detailDepth")?.value || ""
+          depth: row.querySelector(".detailDepth")?.value || "",
+          detailsOpen: !(row.querySelector(".ac-detail-sub")?.hidden ?? true)
         }));
       }
 
@@ -1230,6 +1255,13 @@
 
         trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
         resectionLabel.textContent = fmtMinAsMmSs(resection);
+
+        const lenVal = document.getElementById("lenMm").value.trim();
+        const widVal = document.getElementById("widMm").value.trim();
+        const htVal = document.getElementById("htMm").value.trim();
+
+        const hasAnyDimension = !!(lenVal || widVal || htVal);
+        calculatedVolumesRow.hidden = !hasAnyDimension;
 
         const vols = computeVolumes();
         calcVolEllipsoidEl.textContent = vols.ellipsoid != null ? `${vols.ellipsoid.toFixed(1)} cc` : "—";
@@ -1294,11 +1326,16 @@
         detailPassesDiv.innerHTML = "";
         const passes = Array.isArray(data.detailPasses) && data.detailPasses.length
           ? data.detailPasses
-          : [{ duration: "", angle: "", depth: "" }];
+          : [{ duration: "", angle: "", depth: "", detailsOpen: false }];
 
-        passes.forEach(p => addDetailPassRow(p.duration || "", p.angle || "", p.depth || ""));
+        passes.forEach(p => addDetailPassRow(
+          p.duration || "",
+          p.angle || "",
+          p.depth || "",
+          !!p.detailsOpen
+        ));
+
         recalc();
-
         suppressAutosave = false;
       }
 
@@ -1411,7 +1448,7 @@
           caseColor: "Light Pink",
           outOfRoom: "",
           notes: "",
-          detailPasses: [{ duration: "", angle: "", depth: "" }]
+          detailPasses: [{ duration: "", angle: "", depth: "", detailsOpen: false }]
         };
 
         applyFormData(blank);
@@ -1576,7 +1613,7 @@
       });
 
       document.getElementById("addDetailPass").addEventListener("click", () => {
-        addDetailPassRow("", "", "");
+        addDetailPassRow("", "", "", false);
         scheduleAutosave();
         showFabStatus("Pass added", "info", 900);
         triggerHaptic("light");
@@ -1584,7 +1621,7 @@
 
       document.getElementById("clearDetailPasses").addEventListener("click", () => {
         detailPassesDiv.innerHTML = "";
-        addDetailPassRow("", "", "");
+        addDetailPassRow("", "", "", false);
         recalc();
         scheduleAutosave();
         showFabStatus("Passes cleared", "warn", 900);
