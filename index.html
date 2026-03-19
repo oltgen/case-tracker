@@ -9,7 +9,7 @@
   <title>Case Tracker</title>
   <meta
     name="description"
-    content="Mobile-first surgical case tracking web app for timing, prostate volume, and case summary output."
+    content="Mobile-first surgical case tracking web app for timing, prostate volume, case summary output, and Salesforce transfer support."
   />
 
   <style>
@@ -24,6 +24,7 @@
       --line: rgba(255,255,255,.10);
       --line-strong: rgba(255,255,255,.16);
       --shadow: 0 18px 42px rgba(0,0,0,.34);
+      --blue: rgba(10,132,255,.96);
       --green-line: rgba(48,209,88,.35);
       --warn-line: rgba(255,159,10,.35);
       --danger-soft: rgba(255,69,58,.18);
@@ -53,10 +54,6 @@
     body {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-    }
-
-    [hidden]{
-      display: none !important;
     }
 
     .ac-page{
@@ -115,9 +112,9 @@
 
     .ac-row-metric{
       display:grid;
-      grid-template-columns: var(--label-width) minmax(0,1fr);
+      grid-template-columns: var(--label-width) minmax(0,1fr) minmax(0,1fr);
       gap: 10px;
-      align-items:start;
+      align-items:stretch;
     }
 
     .ac-label{
@@ -292,6 +289,10 @@
       line-height: 1.1;
     }
 
+    .ac-hidden{
+      display: none !important;
+    }
+
     .ac-detail-wrap{
       display:grid;
       gap: 8px;
@@ -345,10 +346,16 @@
       font: inherit;
     }
 
-    .ac-detail-sub{
+    .ac-detail-extra{
       display:grid;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
-      padding-top: 2px;
+    }
+
+    .ac-help{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
     }
 
     .ac-scan-status{
@@ -358,7 +365,8 @@
     }
 
     .ac-notes,
-    .ac-preview{
+    .ac-preview,
+    .ac-push-text{
       width:100%;
       box-sizing:border-box;
       padding: 12px;
@@ -370,7 +378,8 @@
       font: inherit;
     }
 
-    .ac-preview{
+    .ac-preview,
+    .ac-push-text{
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       line-height: 1.25;
       min-height: 220px;
@@ -462,6 +471,53 @@
       overflow: hidden;
     }
 
+    .ac-collapsible[hidden]{
+      display: none;
+    }
+
+    .ac-push-list{
+      display:grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .ac-push-item{
+      display:grid;
+      grid-template-columns: 190px minmax(0,1fr) auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+    }
+
+    .ac-push-name{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .ac-push-value{
+      min-height: 42px;
+      display:flex;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--field);
+      border: 1px solid var(--line);
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .ac-push-value.is-empty{
+      color: var(--muted);
+    }
+
+    .ac-push-copy{
+      min-width: 76px;
+    }
+
     @media (max-width: 880px){
       :root{
         --label-width: 112px;
@@ -480,11 +536,23 @@
         grid-template-columns: 1fr;
       }
 
+      .ac-row-metric{
+        grid-template-columns: var(--label-width) minmax(0,1fr);
+      }
+
+      .ac-row-metric .ac-volume-grid{
+        grid-column: 1 / -1;
+      }
+
       .ac-volume-grid{
         grid-template-columns: 1fr;
       }
 
       .ac-detail-top{
+        grid-template-columns: 1fr;
+      }
+
+      .ac-detail-extra{
         grid-template-columns: 1fr;
       }
 
@@ -504,6 +572,14 @@
 
       .ac-lot-controls{
         grid-template-columns: 1fr;
+      }
+
+      .ac-push-item{
+        grid-template-columns: 1fr;
+      }
+
+      .ac-push-copy{
+        width: 100%;
       }
     }
   </style>
@@ -655,7 +731,7 @@
           <input id="ippMm" class="ac-input" type="number" step="0.1" min="0" placeholder="IPP">
         </div>
 
-        <div class="ac-row-metric" id="calculatedVolumesRow" hidden>
+        <div id="volumeRow" class="ac-row-metric ac-hidden">
           <div class="ac-label">Calculated Volumes</div>
           <div class="ac-volume-grid">
             <div class="ac-metric">
@@ -714,6 +790,7 @@
           <select id="cauteryType" class="ac-select">
             <option value="Bipolar" selected>Bipolar</option>
             <option value="Monopolar">Monopolar</option>
+            <option value="Balloon">Balloon</option>
           </select>
         </div>
 
@@ -767,6 +844,24 @@
         </div>
       </div>
       <textarea id="preview" class="ac-preview" rows="12"></textarea>
+    </section>
+
+    <section class="ac-card">
+      <div class="ac-card-h">
+        <h2>Push to Salesforce</h2>
+        <div class="ac-actions compact">
+          <button id="buildPush" type="button" class="ac-btn ac-btn-primary">Push</button>
+          <button id="copyPushAll" type="button" class="ac-btn">Copy All</button>
+        </div>
+      </div>
+
+      <div class="ac-help">
+        Build a transfer view so you can copy the Salesforce fields quickly. Use the single Copy buttons for one field at a time, or Copy All for the full block.
+      </div>
+
+      <div id="pushList" class="ac-push-list"></div>
+      <textarea id="pushPreview" class="ac-push-text" rows="12" placeholder="Push output will appear here."></textarea>
+
       <div id="status" class="ac-status"></div>
     </section>
   </div>
@@ -782,6 +877,8 @@
 
       const statusEl = document.getElementById("status");
       const previewEl = document.getElementById("preview");
+      const pushPreviewEl = document.getElementById("pushPreview");
+      const pushListEl = document.getElementById("pushList");
       const caseNameEl = document.getElementById("caseName");
       const savedCasesEl = document.getElementById("savedCases");
       const detailPassesDiv = document.getElementById("detailPasses");
@@ -790,13 +887,13 @@
       const scanLotBtn = document.getElementById("scanLotBtn");
       const lotCameraInput = document.getElementById("lotCameraInput");
       const lotScanStatusEl = document.getElementById("lotScanStatus");
-      const calculatedVolumesRow = document.getElementById("calculatedVolumesRow");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
       const resectionLabel = document.getElementById("resectionLabel");
       const calcVolEllipsoidEl = document.getElementById("calcVolEllipsoid");
       const calcVolBulletEl = document.getElementById("calcVolBullet");
+      const volumeRowEl = document.getElementById("volumeRow");
 
       const casesCollapseBtn = document.getElementById("casesCollapseBtn");
       const casesCollapseBody = document.getElementById("casesCollapseBody");
@@ -806,6 +903,23 @@
       let autosaveTimer = null;
       let fabStatusTimer = null;
       let isScanningLot = false;
+
+      const pushFieldDefinitions = [
+        { label: "Handpiece Lot Number", getValue: () => cleanText(document.getElementById("handpieceLot").value) },
+        { label: "Prostate Size in Grams", getValue: () => cleanText(document.getElementById("prostateVolumeKnown").value) },
+        { label: "Aquablation Treatment Passes", getValue: getPassCountString },
+        { label: "Other area(s) cautery tool was used", getValue: () => cleanText(document.getElementById("cauteryType").value) },
+        { label: "Actual Case Start Time", getValue: () => cleanText(document.getElementById("patientInRoom").value) },
+        { label: "TRUS Insertion Time", getValue: () => cleanText(document.getElementById("trusIn").value) },
+        { label: "Aquablation Start Time", getValue: () => cleanText(document.getElementById("aquaStart").value) },
+        { label: "Focal Cautery Start Time", getValue: () => cleanText(document.getElementById("hpOut").value) },
+        { label: "Focal Cautery End Time", getValue: () => cleanText(document.getElementById("cathIn").value) },
+        { label: "Catheter Insertion Time", getValue: () => cleanText(document.getElementById("cathIn").value) },
+        { label: "Actual Case End Time", getValue: () => cleanText(document.getElementById("outOfRoom").value) },
+        { label: "Status", getValue: () => "Planned" },
+        { label: "Cancelled Reason", getValue: () => "" },
+        { label: "Robotic System", getValue: () => cleanText(document.getElementById("procedureType").value) }
+      ];
 
       function triggerHaptic(type = "light"){
         if(!("vibrate" in navigator)) return;
@@ -934,6 +1048,10 @@
         return fmtMmSs(Math.round(totalMinutes * 60));
       }
 
+      function cleanText(value){
+        return String(value || "").trim();
+      }
+
       function computeVolumes(){
         const knownTop = Number(document.getElementById("prostateVolumeKnown").value);
         const Lmm = Number(document.getElementById("lenMm").value);
@@ -954,7 +1072,8 @@
         return {
           known: Number.isFinite(knownTop) && knownTop > 0 ? knownTop : null,
           ellipsoid,
-          bullet
+          bullet,
+          show: (Number.isFinite(Lmm) && Lmm > 0) || (Number.isFinite(Wmm) && Wmm > 0) || (Number.isFinite(Hmm) && Hmm > 0)
         };
       }
 
@@ -964,7 +1083,7 @@
           .toUpperCase()
           .replace(/[|]/g, "I")
           .replace(/\s+/g, "")
-          .replace(/[^A-Z0-9-]/g, "")
+          .replace(/[^A-Z0-9\-]/g, "")
           .trim();
       }
 
@@ -993,7 +1112,7 @@
 
         if (/[A-Z]/.test(token)) score += 2;
         if (/\d/.test(token)) score += 2;
-        if (/^[A-Z0-9-]+$/.test(token)) score += 3;
+        if (/^[A-Z0-9\-]+$/.test(token)) score += 3;
         if (/^[A-Z0-9]+$/.test(token)) score += 2;
         if (token.includes("-")) score += 1;
 
@@ -1021,7 +1140,7 @@
 
         if (lotMatch && lotMatch[1]) {
           const nearLot = lotMatch[1]
-            .split(/[^A-Z0-9-]+/)
+            .split(/[^A-Z0-9\-]+/)
             .map(cleanLotText)
             .filter(Boolean);
 
@@ -1034,7 +1153,7 @@
         }
 
         const allTokens = upper
-          .split(/[^A-Z0-9-]+/)
+          .split(/[^A-Z0-9\-]+/)
           .map(cleanLotText)
           .filter(Boolean);
 
@@ -1109,7 +1228,7 @@
         }
       }
 
-      function addDetailPassRow(duration="", angle="", depth="", detailsOpen=false){
+      function addDetailPassRow(duration="", angle="", depth="", showExtra=false){
         const row = document.createElement("div");
         row.className = "ac-detail-card";
 
@@ -1130,15 +1249,60 @@
           scheduleAutosave();
         });
 
-        const toggleBtn = document.createElement("button");
-        toggleBtn.type = "button";
-        toggleBtn.className = "ac-btn ac-btn-ghost";
-        toggleBtn.textContent = detailsOpen ? "Hide Details" : "Add Details";
+        const detailsBtn = document.createElement("button");
+        detailsBtn.type = "button";
+        detailsBtn.className = "ac-btn ac-btn-ghost";
+        detailsBtn.textContent = showExtra ? "Hide Details" : "Add Details";
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "ac-btn ac-btn-ghost";
         removeBtn.textContent = "Remove";
+
+        top.appendChild(badge);
+        top.appendChild(dur);
+        top.appendChild(detailsBtn);
+        top.appendChild(removeBtn);
+
+        const extra = document.createElement("div");
+        extra.className = "ac-detail-extra";
+        if(!showExtra) extra.classList.add("ac-hidden");
+
+        const ang = document.createElement("input");
+        ang.type = "text";
+        ang.placeholder = "Angle";
+        ang.value = angle;
+        ang.className = "ac-detail-input detailAngle";
+        ang.addEventListener("input", scheduleAutosave);
+
+        const dep = document.createElement("input");
+        dep.type = "number";
+        dep.placeholder = "Depth";
+        dep.step = "0.1";
+        dep.min = "0";
+        dep.value = depth;
+        dep.className = "ac-detail-input detailDepth";
+        dep.addEventListener("input", scheduleAutosave);
+
+        extra.appendChild(ang);
+        extra.appendChild(dep);
+
+        detailsBtn.addEventListener("click", () => {
+          const hidden = extra.classList.contains("ac-hidden");
+          if(hidden){
+            extra.classList.remove("ac-hidden");
+            detailsBtn.textContent = "Hide Details";
+            showFabStatus("Details shown", "info", 800);
+          } else {
+            extra.classList.add("ac-hidden");
+            detailsBtn.textContent = "Add Details";
+            ang.value = "";
+            dep.value = "";
+            scheduleAutosave();
+            showFabStatus("Details hidden", "info", 800);
+          }
+        });
+
         removeBtn.addEventListener("click", () => {
           row.remove();
           renumberPasses();
@@ -1149,64 +1313,9 @@
           scheduleAutosave();
         });
 
-        top.appendChild(badge);
-        top.appendChild(dur);
-        top.appendChild(toggleBtn);
-        top.appendChild(removeBtn);
-
-        const detailsWrap = document.createElement("div");
-        detailsWrap.className = "ac-detail-sub";
-        detailsWrap.hidden = !detailsOpen;
-
-        const angleRow = document.createElement("div");
-        angleRow.className = "ac-row";
-
-        const angleLabel = document.createElement("div");
-        angleLabel.className = "ac-label";
-        angleLabel.textContent = "Angle";
-
-        const angleInput = document.createElement("input");
-        angleInput.type = "text";
-        angleInput.placeholder = "Angle";
-        angleInput.value = angle;
-        angleInput.className = "ac-detail-input detailAngle";
-        angleInput.addEventListener("input", scheduleAutosave);
-
-        angleRow.appendChild(angleLabel);
-        angleRow.appendChild(angleInput);
-
-        const depthRow = document.createElement("div");
-        depthRow.className = "ac-row";
-
-        const depthLabel = document.createElement("div");
-        depthLabel.className = "ac-label";
-        depthLabel.textContent = "Depth";
-
-        const depthInput = document.createElement("input");
-        depthInput.type = "number";
-        depthInput.step = "0.1";
-        depthInput.min = "0";
-        depthInput.placeholder = "Depth";
-        depthInput.value = depth;
-        depthInput.className = "ac-detail-input detailDepth";
-        depthInput.addEventListener("input", scheduleAutosave);
-
-        depthRow.appendChild(depthLabel);
-        depthRow.appendChild(depthInput);
-
-        detailsWrap.appendChild(angleRow);
-        detailsWrap.appendChild(depthRow);
-
-        toggleBtn.addEventListener("click", () => {
-          detailsWrap.hidden = !detailsWrap.hidden;
-          toggleBtn.textContent = detailsWrap.hidden ? "Add Details" : "Hide Details";
-          scheduleAutosave();
-        });
-
         row.appendChild(top);
-        row.appendChild(detailsWrap);
+        row.appendChild(extra);
         detailPassesDiv.appendChild(row);
-
         renumberPasses();
       }
 
@@ -1218,22 +1327,31 @@
       }
 
       function getRawDetailPasses(){
-        return Array.from(detailPassesDiv.querySelectorAll(".ac-detail-card")).map(row => ({
-          duration: row.querySelector(".detailDur")?.value || "",
-          angle: row.querySelector(".detailAngle")?.value || "",
-          depth: row.querySelector(".detailDepth")?.value || "",
-          detailsOpen: !(row.querySelector(".ac-detail-sub")?.hidden ?? true)
-        }));
+        return Array.from(document.querySelectorAll(".ac-detail-card")).map(row => {
+          const extra = row.querySelector(".ac-detail-extra");
+          const extraVisible = extra && !extra.classList.contains("ac-hidden");
+          return {
+            duration: row.querySelector(".detailDur")?.value || "",
+            angle: row.querySelector(".detailAngle")?.value || "",
+            depth: row.querySelector(".detailDepth")?.value || "",
+            showExtra: !!extraVisible
+          };
+        });
       }
 
       function getValidDetailPasses(){
         return getRawDetailPasses()
           .map(p => ({
             sec: parseDurationToSeconds(p.duration),
-            angle: (p.angle || "").trim(),
-            depth: (p.depth || "").trim()
+            angle: cleanText(p.angle),
+            depth: cleanText(p.depth)
           }))
           .filter(x => x.sec != null);
+      }
+
+      function getPassCountString(){
+        const valid = getValidDetailPasses();
+        return valid.length ? String(valid.length) : "";
       }
 
       function recalc(){
@@ -1254,16 +1372,15 @@
         trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
         resectionLabel.textContent = fmtMinAsMmSs(resection);
 
-        const lenVal = (document.getElementById("lenMm").value || "").trim();
-        const widVal = (document.getElementById("widMm").value || "").trim();
-        const htVal = (document.getElementById("htMm").value || "").trim();
-        const hasAnyDimension = !!(lenVal || widVal || htVal);
-
-        calculatedVolumesRow.hidden = !hasAnyDimension;
-
         const vols = computeVolumes();
         calcVolEllipsoidEl.textContent = vols.ellipsoid != null ? `${vols.ellipsoid.toFixed(1)} cc` : "—";
         calcVolBulletEl.textContent = vols.bullet != null ? `${vols.bullet.toFixed(1)} cc` : "—";
+
+        if(vols.show){
+          volumeRowEl.classList.remove("ac-hidden");
+        } else {
+          volumeRowEl.classList.add("ac-hidden");
+        }
       }
 
       function collectFormData(){
@@ -1324,16 +1441,11 @@
         detailPassesDiv.innerHTML = "";
         const passes = Array.isArray(data.detailPasses) && data.detailPasses.length
           ? data.detailPasses
-          : [{ duration: "", angle: "", depth: "", detailsOpen: false }];
+          : [{ duration: "", angle: "", depth: "", showExtra: false }];
 
-        passes.forEach(p => addDetailPassRow(
-          p.duration || "",
-          p.angle || "",
-          p.depth || "",
-          !!p.detailsOpen
-        ));
-
+        passes.forEach(p => addDetailPassRow(p.duration || "", p.angle || "", p.depth || "", !!p.showExtra));
         recalc();
+
         suppressAutosave = false;
       }
 
@@ -1373,7 +1485,7 @@
         }
 
         const data = collectFormData();
-        const recordName = (data.caseName || "").trim() || defaultCaseName();
+        const recordName = cleanText(data.caseName) || defaultCaseName();
         const idx = cases.findIndex(c => c.id === active);
 
         if(idx >= 0){
@@ -1446,10 +1558,13 @@
           caseColor: "Light Pink",
           outOfRoom: "",
           notes: "",
-          detailPasses: [{ duration: "", angle: "", depth: "", detailsOpen: false }]
+          detailPasses: [{ duration: "", angle: "", depth: "", showExtra: false }]
         };
 
         applyFormData(blank);
+        previewEl.value = "";
+        pushPreviewEl.value = "";
+        pushListEl.innerHTML = "";
         autosave();
         setStatus("New case created.");
         showFabStatus("New case created", "success");
@@ -1505,35 +1620,35 @@
         const lines = [];
 
         lines.push("Case Tracker Case Summary");
-        if((data.caseName || "").trim()) lines.push(`Case Name: ${data.caseName.trim()}`);
-        if(data.procedureType) lines.push(`Procedure Type: ${data.procedureType}`);
+        if(cleanText(data.caseName)) lines.push(`Case Name: ${cleanText(data.caseName)}`);
+        if(cleanText(data.procedureType)) lines.push(`Procedure Type: ${cleanText(data.procedureType)}`);
 
         lines.push("");
         lines.push("Patient & Setup");
-        if(data.surgeon) lines.push(`Surgeon: ${data.surgeon}`);
-        if(data.handpieceLot) lines.push(`Handpiece LOT #: ${data.handpieceLot}`);
-        if(data.patientInRoom) lines.push(`Patient in Room: ${data.patientInRoom}`);
-        if(data.prostateVolumeKnown) lines.push(`Prostate Volume (Known): ${data.prostateVolumeKnown} cc`);
-        if(data.prevProcedures) lines.push(`Previous Procedures: ${data.prevProcedures}`);
-        if(data.anesthesia) lines.push(`Anesthesia: ${data.anesthesia}`);
+        if(cleanText(data.surgeon)) lines.push(`Surgeon: ${cleanText(data.surgeon)}`);
+        if(cleanText(data.handpieceLot)) lines.push(`Handpiece LOT #: ${cleanText(data.handpieceLot)}`);
+        if(cleanText(data.patientInRoom)) lines.push(`Patient in Room: ${cleanText(data.patientInRoom)}`);
+        if(cleanText(data.prostateVolumeKnown)) lines.push(`Prostate Volume (Known): ${cleanText(data.prostateVolumeKnown)} cc`);
+        if(cleanText(data.prevProcedures)) lines.push(`Previous Procedures: ${cleanText(data.prevProcedures)}`);
+        if(cleanText(data.anesthesia)) lines.push(`Anesthesia: ${cleanText(data.anesthesia)}`);
 
         lines.push("");
         lines.push("Imaging & Anatomy");
-        if(data.trusIn) lines.push(`TRUS in: ${data.trusIn}`);
-        if(data.ivLobe) lines.push(`Intravesical Lobe: ${data.ivLobe}`);
-        if(data.lenMm) lines.push(`L (mm): ${data.lenMm}`);
-        if(data.widMm) lines.push(`W (mm): ${data.widMm}`);
-        if(data.htMm) lines.push(`H (mm): ${data.htMm}`);
-        if(data.ippMm) lines.push(`IPP (mm): ${data.ippMm}`);
+        if(cleanText(data.trusIn)) lines.push(`TRUS in: ${cleanText(data.trusIn)}`);
+        if(cleanText(data.ivLobe)) lines.push(`Intravesical Lobe: ${cleanText(data.ivLobe)}`);
+        if(cleanText(data.lenMm)) lines.push(`L (mm): ${cleanText(data.lenMm)}`);
+        if(cleanText(data.widMm)) lines.push(`W (mm): ${cleanText(data.widMm)}`);
+        if(cleanText(data.htMm)) lines.push(`H (mm): ${cleanText(data.htMm)}`);
+        if(cleanText(data.ippMm)) lines.push(`IPP (mm): ${cleanText(data.ippMm)}`);
         if(vols.ellipsoid != null) lines.push(`Ellipsoid Volume: ${vols.ellipsoid.toFixed(1)} cc`);
         if(vols.bullet != null) lines.push(`Bullet Volume: ${vols.bullet.toFixed(1)} cc`);
 
         lines.push("");
         lines.push("Procedure & Timing");
-        if(data.hpIn) lines.push(`HP in: ${data.hpIn}`);
-        if(data.aquaStart) lines.push(`AQUA Start Time: ${data.aquaStart}`);
-        if(data.hpOut) lines.push(`HP Out / FBNC Start: ${data.hpOut}`);
-        if(data.cathIn) lines.push(`Catheter In / FBNC End: ${data.cathIn}`);
+        if(cleanText(data.hpIn)) lines.push(`HP in: ${cleanText(data.hpIn)}`);
+        if(cleanText(data.aquaStart)) lines.push(`AQUA Start Time: ${cleanText(data.aquaStart)}`);
+        if(cleanText(data.hpOut)) lines.push(`HP Out / FBNC Start: ${cleanText(data.hpOut)}`);
+        if(cleanText(data.cathIn)) lines.push(`Catheter In / FBNC End: ${cleanText(data.cathIn)}`);
 
         lines.push("");
         lines.push("Pass Durations");
@@ -1553,13 +1668,68 @@
         lines.push(`TRUS to Cath: ${fmtMinAsMmSs(trusToCathMin)}`);
         lines.push(`Resection Time: ${fmtMinAsMmSs(resectionMin)}`);
 
-        if(data.notes){
+        if(cleanText(data.notes)){
           lines.push("");
           lines.push("Notes");
-          lines.push(data.notes);
+          lines.push(cleanText(data.notes));
         }
 
         return lines.join("\n").trim();
+      }
+
+      function buildPushData(){
+        return pushFieldDefinitions.map(def => ({
+          label: def.label,
+          value: cleanText(def.getValue())
+        }));
+      }
+
+      function buildPushText(pushData){
+        return pushData.map(item => `${item.label}: ${item.value}`).join("\n").trim();
+      }
+
+      function renderPushList(pushData){
+        pushListEl.innerHTML = "";
+
+        pushData.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "ac-push-item";
+
+          const name = document.createElement("div");
+          name.className = "ac-push-name";
+          name.textContent = item.label;
+
+          const value = document.createElement("div");
+          value.className = "ac-push-value";
+          if(item.value){
+            value.textContent = item.value;
+          } else {
+            value.textContent = "—";
+            value.classList.add("is-empty");
+          }
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "ac-btn ac-push-copy";
+          btn.textContent = "Copy";
+          btn.addEventListener("click", async () => {
+            const ok = await copyText(item.value || "");
+            if(ok){
+              setStatus(`${item.label} copied.`);
+              showFabStatus("Copied", "success");
+              triggerHaptic("success");
+            } else {
+              setStatus("Copy blocked by browser.");
+              showFabStatus("Copy blocked", "warn");
+              triggerHaptic("warning");
+            }
+          });
+
+          row.appendChild(name);
+          row.appendChild(value);
+          row.appendChild(btn);
+          pushListEl.appendChild(row);
+        });
       }
 
       async function copyText(text){
@@ -1598,7 +1768,12 @@
       });
 
       document.querySelectorAll("input, select, textarea").forEach(el => {
-        if(el.id !== "savedCases" && el.id !== "lotCameraInput"){
+        if(
+          el.id !== "savedCases" &&
+          el.id !== "lotCameraInput" &&
+          el.id !== "preview" &&
+          el.id !== "pushPreview"
+        ){
           el.addEventListener("input", () => {
             recalc();
             scheduleAutosave();
@@ -1670,6 +1845,34 @@
         }
       });
 
+      document.getElementById("buildPush").addEventListener("click", () => {
+        const pushData = buildPushData();
+        const pushText = buildPushText(pushData);
+        renderPushList(pushData);
+        pushPreviewEl.value = pushText;
+        setStatus("Push view built.");
+        showFabStatus("Push built", "info");
+        triggerHaptic("light");
+      });
+
+      document.getElementById("copyPushAll").addEventListener("click", async () => {
+        const pushData = buildPushData();
+        const pushText = buildPushText(pushData);
+        renderPushList(pushData);
+        pushPreviewEl.value = pushText;
+
+        const ok = await copyText(pushText);
+        if(ok){
+          setStatus("Push block copied.");
+          showFabStatus("Copied", "success");
+          triggerHaptic("success");
+        } else {
+          setStatus("Copy blocked by browser. Manually copy from the push box.");
+          showFabStatus("Copy blocked", "warn");
+          triggerHaptic("warning");
+        }
+      });
+
       function bootstrap(){
         setCasesCollapsed(true);
 
@@ -1686,6 +1889,12 @@
         } else {
           createNewCase();
         }
+
+        if(!detailPassesDiv.children.length){
+          addDetailPassRow("", "", "", false);
+        }
+
+        recalc();
       }
 
       bootstrap();
