@@ -314,7 +314,7 @@
 
     .ac-detail-top{
       display:grid;
-      grid-template-columns: 76px minmax(0,1fr) auto auto;
+      grid-template-columns: 76px minmax(0,1fr) auto;
       gap: 8px;
       align-items:center;
     }
@@ -1133,26 +1133,11 @@
         const toggleBtn = document.createElement("button");
         toggleBtn.type = "button";
         toggleBtn.className = "ac-btn ac-btn-ghost";
-        toggleBtn.textContent = detailsOpen ? "Hide Details" : "Add Details";
-
-        const removeBtn = document.createElement("button");
-        removeBtn.type = "button";
-        removeBtn.className = "ac-btn ac-btn-ghost";
-        removeBtn.textContent = "Remove";
-        removeBtn.addEventListener("click", () => {
-          row.remove();
-          renumberPasses();
-          if(!detailPassesDiv.children.length){
-            addDetailPassRow("", "", "", false);
-          }
-          recalc();
-          scheduleAutosave();
-        });
+        toggleBtn.textContent = "Add/Remove Details";
 
         top.appendChild(badge);
         top.appendChild(dur);
         top.appendChild(toggleBtn);
-        top.appendChild(removeBtn);
 
         const detailsWrap = document.createElement("div");
         detailsWrap.className = "ac-detail-sub";
@@ -1199,7 +1184,13 @@
 
         toggleBtn.addEventListener("click", () => {
           detailsWrap.hidden = !detailsWrap.hidden;
-          toggleBtn.textContent = detailsWrap.hidden ? "Add Details" : "Hide Details";
+
+          if(detailsWrap.hidden){
+            angleInput.value = "";
+            depthInput.value = "";
+          }
+
+          recalc();
           scheduleAutosave();
         });
 
@@ -1228,11 +1219,14 @@
 
       function getValidDetailPasses(){
         return getRawDetailPasses()
-          .map(p => ({
-            sec: parseDurationToSeconds(p.duration),
-            angle: (p.angle || "").trim(),
-            depth: (p.depth || "").trim()
-          }))
+          .map(p => {
+            const detailsShown = !!p.detailsOpen;
+            return {
+              sec: parseDurationToSeconds(p.duration),
+              angle: detailsShown ? (p.angle || "").trim() : "",
+              depth: detailsShown ? (p.depth || "").trim() : ""
+            };
+          })
           .filter(x => x.sec != null);
       }
 
