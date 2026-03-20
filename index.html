@@ -9,7 +9,7 @@
   <title>Case Tracker</title>
   <meta
     name="description"
-    content="Mobile-first surgical case tracking web app for timing and prostate volume case summary output."
+    content="Mobile-first surgical case tracking web app for timing, prostate volume, and case summary output."
   />
 
   <style>
@@ -53,6 +53,10 @@
     body {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+
+    [hidden]{
+      display: none !important;
     }
 
     .ac-page{
@@ -111,9 +115,9 @@
 
     .ac-row-metric{
       display:grid;
-      grid-template-columns: var(--label-width) minmax(0,1fr) minmax(0,1fr);
+      grid-template-columns: var(--label-width) minmax(0,1fr);
       gap: 10px;
-      align-items:stretch;
+      align-items:start;
     }
 
     .ac-label{
@@ -288,10 +292,6 @@
       line-height: 1.1;
     }
 
-    .ac-hidden{
-      display: none !important;
-    }
-
     .ac-detail-wrap{
       display:grid;
       gap: 8px;
@@ -314,7 +314,7 @@
 
     .ac-detail-top{
       display:grid;
-      grid-template-columns: 76px minmax(0,1fr) 190px 120px;
+      grid-template-columns: 76px minmax(0,1fr) auto auto;
       gap: 8px;
       align-items:center;
     }
@@ -345,16 +345,10 @@
       font: inherit;
     }
 
-    .ac-detail-extra{
+    .ac-detail-sub{
       display:grid;
-      grid-template-columns: 1fr 1fr;
       gap: 8px;
-    }
-
-    .ac-help{
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
+      padding-top: 2px;
     }
 
     .ac-scan-status{
@@ -468,10 +462,6 @@
       overflow: hidden;
     }
 
-    .ac-collapsible[hidden]{
-      display: none;
-    }
-
     @media (max-width: 880px){
       :root{
         --label-width: 112px;
@@ -490,23 +480,11 @@
         grid-template-columns: 1fr;
       }
 
-      .ac-row-metric{
-        grid-template-columns: var(--label-width) minmax(0,1fr);
-      }
-
-      .ac-row-metric .ac-volume-grid{
-        grid-column: 1 / -1;
-      }
-
       .ac-volume-grid{
         grid-template-columns: 1fr;
       }
 
       .ac-detail-top{
-        grid-template-columns: 1fr;
-      }
-
-      .ac-detail-extra{
         grid-template-columns: 1fr;
       }
 
@@ -677,7 +655,7 @@
           <input id="ippMm" class="ac-input" type="number" step="0.1" min="0" placeholder="IPP">
         </div>
 
-        <div id="volumeRow" class="ac-row-metric ac-hidden">
+        <div class="ac-row-metric" id="calculatedVolumesRow" hidden>
           <div class="ac-label">Calculated Volumes</div>
           <div class="ac-volume-grid">
             <div class="ac-metric">
@@ -736,7 +714,6 @@
           <select id="cauteryType" class="ac-select">
             <option value="Bipolar" selected>Bipolar</option>
             <option value="Monopolar">Monopolar</option>
-            <option value="Balloon">Balloon</option>
           </select>
         </div>
 
@@ -813,13 +790,13 @@
       const scanLotBtn = document.getElementById("scanLotBtn");
       const lotCameraInput = document.getElementById("lotCameraInput");
       const lotScanStatusEl = document.getElementById("lotScanStatus");
+      const calculatedVolumesRow = document.getElementById("calculatedVolumesRow");
 
       const aquaTimeLabel = document.getElementById("aquaTimeLabel");
       const trusCathLabel = document.getElementById("trusCathLabel");
       const resectionLabel = document.getElementById("resectionLabel");
       const calcVolEllipsoidEl = document.getElementById("calcVolEllipsoid");
       const calcVolBulletEl = document.getElementById("calcVolBullet");
-      const volumeRowEl = document.getElementById("volumeRow");
 
       const casesCollapseBtn = document.getElementById("casesCollapseBtn");
       const casesCollapseBody = document.getElementById("casesCollapseBody");
@@ -957,10 +934,6 @@
         return fmtMmSs(Math.round(totalMinutes * 60));
       }
 
-      function cleanText(value){
-        return String(value || "").trim();
-      }
-
       function computeVolumes(){
         const knownTop = Number(document.getElementById("prostateVolumeKnown").value);
         const Lmm = Number(document.getElementById("lenMm").value);
@@ -981,8 +954,7 @@
         return {
           known: Number.isFinite(knownTop) && knownTop > 0 ? knownTop : null,
           ellipsoid,
-          bullet,
-          show: (Number.isFinite(Lmm) && Lmm > 0) || (Number.isFinite(Wmm) && Wmm > 0) || (Number.isFinite(Hmm) && Hmm > 0)
+          bullet
         };
       }
 
@@ -992,15 +964,15 @@
           .toUpperCase()
           .replace(/[|]/g, "I")
           .replace(/\s+/g, "")
-          .replace(/[^A-Z0-9\\-]/g, "")
+          .replace(/[^A-Z0-9-]/g, "")
           .trim();
       }
 
       function isLikelyDateToken(token){
         if(!token) return false;
-        if (/^\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}$/.test(token)) return true;
-        if (/^\\d{6,8}$/.test(token)) return true;
-        if (/^(19|20)\\d{2}$/.test(token)) return true;
+        if (/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(token)) return true;
+        if (/^\d{6,8}$/.test(token)) return true;
+        if (/^(19|20)\d{2}$/.test(token)) return true;
         return false;
       }
 
@@ -1015,13 +987,13 @@
         if (banned.has(token)) return -999;
         if (token.length < 5 || token.length > 20) return -999;
         if (isLikelyDateToken(token)) return -999;
-        if (!/[A-Z]/.test(token) && !/\\d/.test(token)) return -999;
+        if (!/[A-Z]/.test(token) && !/\d/.test(token)) return -999;
 
         let score = 0;
 
         if (/[A-Z]/.test(token)) score += 2;
-        if (/\\d/.test(token)) score += 2;
-        if (/^[A-Z0-9\\-]+$/.test(token)) score += 3;
+        if (/\d/.test(token)) score += 2;
+        if (/^[A-Z0-9-]+$/.test(token)) score += 3;
         if (/^[A-Z0-9]+$/.test(token)) score += 2;
         if (token.includes("-")) score += 1;
 
@@ -1029,7 +1001,7 @@
         if (alphaNumLength >= 6 && alphaNumLength <= 14) score += 3;
 
         const letters = (token.match(/[A-Z]/g) || []).length;
-        const digits = (token.match(/\\d/g) || []).length;
+        const digits = (token.match(/\d/g) || []).length;
 
         if (letters >= 2) score += 2;
         if (digits >= 2) score += 2;
@@ -1042,14 +1014,14 @@
 
       function extractLotCandidate(rawText){
         const upper = (rawText || "").toUpperCase();
-        const normalizedForContext = upper.replace(/[\\r\\n\\t]+/g, " ");
-        const lotMatch = normalizedForContext.match(/LOT[^A-Z0-9]{0,6}([A-Z0-9\\- ]{4,24})/);
+        const normalizedForContext = upper.replace(/[\r\n\t]+/g, " ");
+        const lotMatch = normalizedForContext.match(/LOT[^A-Z0-9]{0,6}([A-Z0-9\- ]{4,24})/);
 
         const candidates = [];
 
         if (lotMatch && lotMatch[1]) {
           const nearLot = lotMatch[1]
-            .split(/[^A-Z0-9\\-]+/)
+            .split(/[^A-Z0-9-]+/)
             .map(cleanLotText)
             .filter(Boolean);
 
@@ -1062,7 +1034,7 @@
         }
 
         const allTokens = upper
-          .split(/[^A-Z0-9\\-]+/)
+          .split(/[^A-Z0-9-]+/)
           .map(cleanLotText)
           .filter(Boolean);
 
@@ -1137,7 +1109,7 @@
         }
       }
 
-      function addDetailPassRow(duration="", angle="", depth="", showExtra=false){
+      function addDetailPassRow(duration="", angle="", depth="", detailsOpen=false){
         const row = document.createElement("div");
         row.className = "ac-detail-card";
 
@@ -1158,59 +1130,15 @@
           scheduleAutosave();
         });
 
-        const toggleDetailsBtn = document.createElement("button");
-        toggleDetailsBtn.type = "button";
-        toggleDetailsBtn.className = "ac-btn ac-btn-ghost";
-        toggleDetailsBtn.textContent = "Add/Remove Details";
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "ac-btn ac-btn-ghost";
+        toggleBtn.textContent = detailsOpen ? "Hide Details" : "Add Details";
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "ac-btn ac-btn-ghost";
-        removeBtn.textContent = "Delete Pass";
-
-        top.appendChild(badge);
-        top.appendChild(dur);
-        top.appendChild(toggleDetailsBtn);
-        top.appendChild(removeBtn);
-
-        const extra = document.createElement("div");
-        extra.className = "ac-detail-extra";
-        if(!showExtra) extra.classList.add("ac-hidden");
-
-        const ang = document.createElement("input");
-        ang.type = "text";
-        ang.placeholder = "Angle";
-        ang.value = angle;
-        ang.className = "ac-detail-input detailAngle";
-        ang.addEventListener("input", scheduleAutosave);
-
-        const dep = document.createElement("input");
-        dep.type = "number";
-        dep.placeholder = "Depth";
-        dep.step = "0.1";
-        dep.min = "0";
-        dep.value = depth;
-        dep.className = "ac-detail-input detailDepth";
-        dep.addEventListener("input", scheduleAutosave);
-
-        extra.appendChild(ang);
-        extra.appendChild(dep);
-
-        toggleDetailsBtn.addEventListener("click", () => {
-          const hidden = extra.classList.contains("ac-hidden");
-
-          if(hidden){
-            extra.classList.remove("ac-hidden");
-            showFabStatus("Details shown", "info", 800);
-          } else {
-            extra.classList.add("ac-hidden");
-            ang.value = "";
-            dep.value = "";
-            scheduleAutosave();
-            showFabStatus("Details removed", "info", 800);
-          }
-        });
-
+        removeBtn.textContent = "Remove";
         removeBtn.addEventListener("click", () => {
           row.remove();
           renumberPasses();
@@ -1221,9 +1149,64 @@
           scheduleAutosave();
         });
 
+        top.appendChild(badge);
+        top.appendChild(dur);
+        top.appendChild(toggleBtn);
+        top.appendChild(removeBtn);
+
+        const detailsWrap = document.createElement("div");
+        detailsWrap.className = "ac-detail-sub";
+        detailsWrap.hidden = !detailsOpen;
+
+        const angleRow = document.createElement("div");
+        angleRow.className = "ac-row";
+
+        const angleLabel = document.createElement("div");
+        angleLabel.className = "ac-label";
+        angleLabel.textContent = "Angle";
+
+        const angleInput = document.createElement("input");
+        angleInput.type = "text";
+        angleInput.placeholder = "Angle";
+        angleInput.value = angle;
+        angleInput.className = "ac-detail-input detailAngle";
+        angleInput.addEventListener("input", scheduleAutosave);
+
+        angleRow.appendChild(angleLabel);
+        angleRow.appendChild(angleInput);
+
+        const depthRow = document.createElement("div");
+        depthRow.className = "ac-row";
+
+        const depthLabel = document.createElement("div");
+        depthLabel.className = "ac-label";
+        depthLabel.textContent = "Depth";
+
+        const depthInput = document.createElement("input");
+        depthInput.type = "number";
+        depthInput.step = "0.1";
+        depthInput.min = "0";
+        depthInput.placeholder = "Depth";
+        depthInput.value = depth;
+        depthInput.className = "ac-detail-input detailDepth";
+        depthInput.addEventListener("input", scheduleAutosave);
+
+        depthRow.appendChild(depthLabel);
+        depthRow.appendChild(depthInput);
+
+        detailsWrap.appendChild(angleRow);
+        detailsWrap.appendChild(depthRow);
+
+        toggleBtn.addEventListener("click", () => {
+          detailsWrap.hidden = !detailsWrap.hidden;
+          toggleBtn.textContent = detailsWrap.hidden ? "Add Details" : "Hide Details";
+          scheduleAutosave();
+        });
+
         row.appendChild(top);
-        row.appendChild(extra);
+        row.appendChild(detailsWrap);
         detailPassesDiv.appendChild(row);
+
         renumberPasses();
       }
 
@@ -1235,24 +1218,20 @@
       }
 
       function getRawDetailPasses(){
-        return Array.from(document.querySelectorAll(".ac-detail-card")).map(row => {
-          const extra = row.querySelector(".ac-detail-extra");
-          const extraVisible = extra && !extra.classList.contains("ac-hidden");
-          return {
-            duration: row.querySelector(".detailDur")?.value || "",
-            angle: row.querySelector(".detailAngle")?.value || "",
-            depth: row.querySelector(".detailDepth")?.value || "",
-            showExtra: !!extraVisible
-          };
-        });
+        return Array.from(detailPassesDiv.querySelectorAll(".ac-detail-card")).map(row => ({
+          duration: row.querySelector(".detailDur")?.value || "",
+          angle: row.querySelector(".detailAngle")?.value || "",
+          depth: row.querySelector(".detailDepth")?.value || "",
+          detailsOpen: !(row.querySelector(".ac-detail-sub")?.hidden ?? true)
+        }));
       }
 
       function getValidDetailPasses(){
         return getRawDetailPasses()
           .map(p => ({
             sec: parseDurationToSeconds(p.duration),
-            angle: cleanText(p.angle),
-            depth: cleanText(p.depth)
+            angle: (p.angle || "").trim(),
+            depth: (p.depth || "").trim()
           }))
           .filter(x => x.sec != null);
       }
@@ -1275,15 +1254,16 @@
         trusCathLabel.textContent = fmtMinAsMmSs(trusToCath);
         resectionLabel.textContent = fmtMinAsMmSs(resection);
 
+        const lenVal = (document.getElementById("lenMm").value || "").trim();
+        const widVal = (document.getElementById("widMm").value || "").trim();
+        const htVal = (document.getElementById("htMm").value || "").trim();
+        const hasAnyDimension = !!(lenVal || widVal || htVal);
+
+        calculatedVolumesRow.hidden = !hasAnyDimension;
+
         const vols = computeVolumes();
         calcVolEllipsoidEl.textContent = vols.ellipsoid != null ? `${vols.ellipsoid.toFixed(1)} cc` : "—";
         calcVolBulletEl.textContent = vols.bullet != null ? `${vols.bullet.toFixed(1)} cc` : "—";
-
-        if(vols.show){
-          volumeRowEl.classList.remove("ac-hidden");
-        } else {
-          volumeRowEl.classList.add("ac-hidden");
-        }
       }
 
       function collectFormData(){
@@ -1344,11 +1324,16 @@
         detailPassesDiv.innerHTML = "";
         const passes = Array.isArray(data.detailPasses) && data.detailPasses.length
           ? data.detailPasses
-          : [{ duration: "", angle: "", depth: "", showExtra: false }];
+          : [{ duration: "", angle: "", depth: "", detailsOpen: false }];
 
-        passes.forEach(p => addDetailPassRow(p.duration || "", p.angle || "", p.depth || "", !!p.showExtra));
+        passes.forEach(p => addDetailPassRow(
+          p.duration || "",
+          p.angle || "",
+          p.depth || "",
+          !!p.detailsOpen
+        ));
+
         recalc();
-
         suppressAutosave = false;
       }
 
@@ -1388,7 +1373,7 @@
         }
 
         const data = collectFormData();
-        const recordName = cleanText(data.caseName) || defaultCaseName();
+        const recordName = (data.caseName || "").trim() || defaultCaseName();
         const idx = cases.findIndex(c => c.id === active);
 
         if(idx >= 0){
@@ -1461,11 +1446,10 @@
           caseColor: "Light Pink",
           outOfRoom: "",
           notes: "",
-          detailPasses: [{ duration: "", angle: "", depth: "", showExtra: false }]
+          detailPasses: [{ duration: "", angle: "", depth: "", detailsOpen: false }]
         };
 
         applyFormData(blank);
-        previewEl.value = "";
         autosave();
         setStatus("New case created.");
         showFabStatus("New case created", "success");
@@ -1521,35 +1505,35 @@
         const lines = [];
 
         lines.push("Case Tracker Case Summary");
-        if(cleanText(data.caseName)) lines.push(`Case Name: ${cleanText(data.caseName)}`);
-        if(cleanText(data.procedureType)) lines.push(`Procedure Type: ${cleanText(data.procedureType)}`);
+        if((data.caseName || "").trim()) lines.push(`Case Name: ${data.caseName.trim()}`);
+        if(data.procedureType) lines.push(`Procedure Type: ${data.procedureType}`);
 
         lines.push("");
         lines.push("Patient & Setup");
-        if(cleanText(data.surgeon)) lines.push(`Surgeon: ${cleanText(data.surgeon)}`);
-        if(cleanText(data.handpieceLot)) lines.push(`Handpiece LOT #: ${cleanText(data.handpieceLot)}`);
-        if(cleanText(data.patientInRoom)) lines.push(`Patient in Room: ${cleanText(data.patientInRoom)}`);
-        if(cleanText(data.prostateVolumeKnown)) lines.push(`Prostate Volume (Known): ${cleanText(data.prostateVolumeKnown)} cc`);
-        if(cleanText(data.prevProcedures)) lines.push(`Previous Procedures: ${cleanText(data.prevProcedures)}`);
-        if(cleanText(data.anesthesia)) lines.push(`Anesthesia: ${cleanText(data.anesthesia)}`);
+        if(data.surgeon) lines.push(`Surgeon: ${data.surgeon}`);
+        if(data.handpieceLot) lines.push(`Handpiece LOT #: ${data.handpieceLot}`);
+        if(data.patientInRoom) lines.push(`Patient in Room: ${data.patientInRoom}`);
+        if(data.prostateVolumeKnown) lines.push(`Prostate Volume (Known): ${data.prostateVolumeKnown} cc`);
+        if(data.prevProcedures) lines.push(`Previous Procedures: ${data.prevProcedures}`);
+        if(data.anesthesia) lines.push(`Anesthesia: ${data.anesthesia}`);
 
         lines.push("");
         lines.push("Imaging & Anatomy");
-        if(cleanText(data.trusIn)) lines.push(`TRUS in: ${cleanText(data.trusIn)}`);
-        if(cleanText(data.ivLobe)) lines.push(`Intravesical Lobe: ${cleanText(data.ivLobe)}`);
-        if(cleanText(data.lenMm)) lines.push(`L (mm): ${cleanText(data.lenMm)}`);
-        if(cleanText(data.widMm)) lines.push(`W (mm): ${cleanText(data.widMm)}`);
-        if(cleanText(data.htMm)) lines.push(`H (mm): ${cleanText(data.htMm)}`);
-        if(cleanText(data.ippMm)) lines.push(`IPP (mm): ${cleanText(data.ippMm)}`);
+        if(data.trusIn) lines.push(`TRUS in: ${data.trusIn}`);
+        if(data.ivLobe) lines.push(`Intravesical Lobe: ${data.ivLobe}`);
+        if(data.lenMm) lines.push(`L (mm): ${data.lenMm}`);
+        if(data.widMm) lines.push(`W (mm): ${data.widMm}`);
+        if(data.htMm) lines.push(`H (mm): ${data.htMm}`);
+        if(data.ippMm) lines.push(`IPP (mm): ${data.ippMm}`);
         if(vols.ellipsoid != null) lines.push(`Ellipsoid Volume: ${vols.ellipsoid.toFixed(1)} cc`);
         if(vols.bullet != null) lines.push(`Bullet Volume: ${vols.bullet.toFixed(1)} cc`);
 
         lines.push("");
         lines.push("Procedure & Timing");
-        if(cleanText(data.hpIn)) lines.push(`HP in: ${cleanText(data.hpIn)}`);
-        if(cleanText(data.aquaStart)) lines.push(`AQUA Start Time: ${cleanText(data.aquaStart)}`);
-        if(cleanText(data.hpOut)) lines.push(`HP Out / FBNC Start: ${cleanText(data.hpOut)}`);
-        if(cleanText(data.cathIn)) lines.push(`Catheter In / FBNC End: ${cleanText(data.cathIn)}`);
+        if(data.hpIn) lines.push(`HP in: ${data.hpIn}`);
+        if(data.aquaStart) lines.push(`AQUA Start Time: ${data.aquaStart}`);
+        if(data.hpOut) lines.push(`HP Out / FBNC Start: ${data.hpOut}`);
+        if(data.cathIn) lines.push(`Catheter In / FBNC End: ${data.cathIn}`);
 
         lines.push("");
         lines.push("Pass Durations");
@@ -1569,13 +1553,13 @@
         lines.push(`TRUS to Cath: ${fmtMinAsMmSs(trusToCathMin)}`);
         lines.push(`Resection Time: ${fmtMinAsMmSs(resectionMin)}`);
 
-        if(cleanText(data.notes)){
+        if(data.notes){
           lines.push("");
           lines.push("Notes");
-          lines.push(cleanText(data.notes));
+          lines.push(data.notes);
         }
 
-        return lines.join("\\n").trim();
+        return lines.join("\n").trim();
       }
 
       async function copyText(text){
@@ -1614,11 +1598,7 @@
       });
 
       document.querySelectorAll("input, select, textarea").forEach(el => {
-        if(
-          el.id !== "savedCases" &&
-          el.id !== "lotCameraInput" &&
-          el.id !== "preview"
-        ){
+        if(el.id !== "savedCases" && el.id !== "lotCameraInput"){
           el.addEventListener("input", () => {
             recalc();
             scheduleAutosave();
@@ -1706,12 +1686,6 @@
         } else {
           createNewCase();
         }
-
-        if(!detailPassesDiv.children.length){
-          addDetailPassRow("", "", "", false);
-        }
-
-        recalc();
       }
 
       bootstrap();
