@@ -9,7 +9,7 @@
   <title>Case Tracker</title>
   <meta
     name="description"
-    content="Mobile-first surgical case tracking web app for timing, prostate volume, case summary output, and Salesforce transfer support."
+    content="Mobile-first surgical case tracking web app for timing and prostate volume case summary output."
   />
 
   <style>
@@ -24,7 +24,6 @@
       --line: rgba(255,255,255,.10);
       --line-strong: rgba(255,255,255,.16);
       --shadow: 0 18px 42px rgba(0,0,0,.34);
-      --blue: rgba(10,132,255,.96);
       --green-line: rgba(48,209,88,.35);
       --warn-line: rgba(255,159,10,.35);
       --danger-soft: rgba(255,69,58,.18);
@@ -365,8 +364,7 @@
     }
 
     .ac-notes,
-    .ac-preview,
-    .ac-push-text{
+    .ac-preview{
       width:100%;
       box-sizing:border-box;
       padding: 12px;
@@ -378,8 +376,7 @@
       font: inherit;
     }
 
-    .ac-preview,
-    .ac-push-text{
+    .ac-preview{
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       line-height: 1.25;
       min-height: 220px;
@@ -475,49 +472,6 @@
       display: none;
     }
 
-    .ac-push-list{
-      display:grid;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .ac-push-item{
-      display:grid;
-      grid-template-columns: 190px minmax(0,1fr) auto;
-      gap: 8px;
-      align-items:center;
-      padding: 8px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: rgba(0,0,0,.18);
-    }
-
-    .ac-push-name{
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.25;
-    }
-
-    .ac-push-value{
-      min-height: 42px;
-      display:flex;
-      align-items:center;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: var(--field);
-      border: 1px solid var(--line);
-      font-size: 14px;
-      word-break: break-word;
-    }
-
-    .ac-push-value.is-empty{
-      color: var(--muted);
-    }
-
-    .ac-push-copy{
-      min-width: 76px;
-    }
-
     @media (max-width: 880px){
       :root{
         --label-width: 112px;
@@ -572,14 +526,6 @@
 
       .ac-lot-controls{
         grid-template-columns: 1fr;
-      }
-
-      .ac-push-item{
-        grid-template-columns: 1fr;
-      }
-
-      .ac-push-copy{
-        width: 100%;
       }
     }
   </style>
@@ -844,24 +790,6 @@
         </div>
       </div>
       <textarea id="preview" class="ac-preview" rows="12"></textarea>
-    </section>
-
-    <section class="ac-card">
-      <div class="ac-card-h">
-        <h2>Push to Salesforce</h2>
-        <div class="ac-actions compact">
-          <button id="buildPush" type="button" class="ac-btn ac-btn-primary">Push</button>
-          <button id="copyPushAll" type="button" class="ac-btn">Copy All</button>
-        </div>
-      </div>
-
-      <div class="ac-help">
-        Build a transfer view so you can copy the Salesforce fields quickly. Use the single Copy buttons for one field at a time, or Copy All for the full block.
-      </div>
-
-      <div id="pushList" class="ac-push-list"></div>
-      <textarea id="pushPreview" class="ac-push-text" rows="12" placeholder="Push output will appear here."></textarea>
-
       <div id="status" class="ac-status"></div>
     </section>
   </div>
@@ -877,8 +805,6 @@
 
       const statusEl = document.getElementById("status");
       const previewEl = document.getElementById("preview");
-      const pushPreviewEl = document.getElementById("pushPreview");
-      const pushListEl = document.getElementById("pushList");
       const caseNameEl = document.getElementById("caseName");
       const savedCasesEl = document.getElementById("savedCases");
       const detailPassesDiv = document.getElementById("detailPasses");
@@ -903,23 +829,6 @@
       let autosaveTimer = null;
       let fabStatusTimer = null;
       let isScanningLot = false;
-
-      const pushFieldDefinitions = [
-        { label: "Handpiece Lot Number", getValue: () => cleanText(document.getElementById("handpieceLot").value) },
-        { label: "Prostate Size in Grams", getValue: () => cleanText(document.getElementById("prostateVolumeKnown").value) },
-        { label: "Aquablation Treatment Passes", getValue: getPassCountString },
-        { label: "Other area(s) cautery tool was used", getValue: () => cleanText(document.getElementById("cauteryType").value) },
-        { label: "Actual Case Start Time", getValue: () => cleanText(document.getElementById("patientInRoom").value) },
-        { label: "TRUS Insertion Time", getValue: () => cleanText(document.getElementById("trusIn").value) },
-        { label: "Aquablation Start Time", getValue: () => cleanText(document.getElementById("aquaStart").value) },
-        { label: "Focal Cautery Start Time", getValue: () => cleanText(document.getElementById("hpOut").value) },
-        { label: "Focal Cautery End Time", getValue: () => cleanText(document.getElementById("cathIn").value) },
-        { label: "Catheter Insertion Time", getValue: () => cleanText(document.getElementById("cathIn").value) },
-        { label: "Actual Case End Time", getValue: () => cleanText(document.getElementById("outOfRoom").value) },
-        { label: "Status", getValue: () => "Planned" },
-        { label: "Cancelled Reason", getValue: () => "" },
-        { label: "Robotic System", getValue: () => cleanText(document.getElementById("procedureType").value) }
-      ];
 
       function triggerHaptic(type = "light"){
         if(!("vibrate" in navigator)) return;
@@ -1083,15 +992,15 @@
           .toUpperCase()
           .replace(/[|]/g, "I")
           .replace(/\s+/g, "")
-          .replace(/[^A-Z0-9\-]/g, "")
+          .replace(/[^A-Z0-9\\-]/g, "")
           .trim();
       }
 
       function isLikelyDateToken(token){
         if(!token) return false;
-        if (/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(token)) return true;
-        if (/^\d{6,8}$/.test(token)) return true;
-        if (/^(19|20)\d{2}$/.test(token)) return true;
+        if (/^\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}$/.test(token)) return true;
+        if (/^\\d{6,8}$/.test(token)) return true;
+        if (/^(19|20)\\d{2}$/.test(token)) return true;
         return false;
       }
 
@@ -1106,13 +1015,13 @@
         if (banned.has(token)) return -999;
         if (token.length < 5 || token.length > 20) return -999;
         if (isLikelyDateToken(token)) return -999;
-        if (!/[A-Z]/.test(token) && !/\d/.test(token)) return -999;
+        if (!/[A-Z]/.test(token) && !/\\d/.test(token)) return -999;
 
         let score = 0;
 
         if (/[A-Z]/.test(token)) score += 2;
-        if (/\d/.test(token)) score += 2;
-        if (/^[A-Z0-9\-]+$/.test(token)) score += 3;
+        if (/\\d/.test(token)) score += 2;
+        if (/^[A-Z0-9\\-]+$/.test(token)) score += 3;
         if (/^[A-Z0-9]+$/.test(token)) score += 2;
         if (token.includes("-")) score += 1;
 
@@ -1120,7 +1029,7 @@
         if (alphaNumLength >= 6 && alphaNumLength <= 14) score += 3;
 
         const letters = (token.match(/[A-Z]/g) || []).length;
-        const digits = (token.match(/\d/g) || []).length;
+        const digits = (token.match(/\\d/g) || []).length;
 
         if (letters >= 2) score += 2;
         if (digits >= 2) score += 2;
@@ -1133,14 +1042,14 @@
 
       function extractLotCandidate(rawText){
         const upper = (rawText || "").toUpperCase();
-        const normalizedForContext = upper.replace(/[\r\n\t]+/g, " ");
-        const lotMatch = normalizedForContext.match(/LOT[^A-Z0-9]{0,6}([A-Z0-9\- ]{4,24})/);
+        const normalizedForContext = upper.replace(/[\\r\\n\\t]+/g, " ");
+        const lotMatch = normalizedForContext.match(/LOT[^A-Z0-9]{0,6}([A-Z0-9\\- ]{4,24})/);
 
         const candidates = [];
 
         if (lotMatch && lotMatch[1]) {
           const nearLot = lotMatch[1]
-            .split(/[^A-Z0-9\-]+/)
+            .split(/[^A-Z0-9\\-]+/)
             .map(cleanLotText)
             .filter(Boolean);
 
@@ -1153,7 +1062,7 @@
         }
 
         const allTokens = upper
-          .split(/[^A-Z0-9\-]+/)
+          .split(/[^A-Z0-9\\-]+/)
           .map(cleanLotText)
           .filter(Boolean);
 
@@ -1346,11 +1255,6 @@
             depth: cleanText(p.depth)
           }))
           .filter(x => x.sec != null);
-      }
-
-      function getPassCountString(){
-        const valid = getValidDetailPasses();
-        return valid.length ? String(valid.length) : "";
       }
 
       function recalc(){
@@ -1562,8 +1466,6 @@
 
         applyFormData(blank);
         previewEl.value = "";
-        pushPreviewEl.value = "";
-        pushListEl.innerHTML = "";
         autosave();
         setStatus("New case created.");
         showFabStatus("New case created", "success");
@@ -1673,62 +1575,7 @@
           lines.push(cleanText(data.notes));
         }
 
-        return lines.join("\n").trim();
-      }
-
-      function buildPushData(){
-        return pushFieldDefinitions.map(def => ({
-          label: def.label,
-          value: cleanText(def.getValue())
-        }));
-      }
-
-      function buildPushText(pushData){
-        return pushData.map(item => `${item.label}: ${item.value}`).join("\n").trim();
-      }
-
-      function renderPushList(pushData){
-        pushListEl.innerHTML = "";
-
-        pushData.forEach((item) => {
-          const row = document.createElement("div");
-          row.className = "ac-push-item";
-
-          const name = document.createElement("div");
-          name.className = "ac-push-name";
-          name.textContent = item.label;
-
-          const value = document.createElement("div");
-          value.className = "ac-push-value";
-          if(item.value){
-            value.textContent = item.value;
-          } else {
-            value.textContent = "—";
-            value.classList.add("is-empty");
-          }
-
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "ac-btn ac-push-copy";
-          btn.textContent = "Copy";
-          btn.addEventListener("click", async () => {
-            const ok = await copyText(item.value || "");
-            if(ok){
-              setStatus(`${item.label} copied.`);
-              showFabStatus("Copied", "success");
-              triggerHaptic("success");
-            } else {
-              setStatus("Copy blocked by browser.");
-              showFabStatus("Copy blocked", "warn");
-              triggerHaptic("warning");
-            }
-          });
-
-          row.appendChild(name);
-          row.appendChild(value);
-          row.appendChild(btn);
-          pushListEl.appendChild(row);
-        });
+        return lines.join("\\n").trim();
       }
 
       async function copyText(text){
@@ -1770,8 +1617,7 @@
         if(
           el.id !== "savedCases" &&
           el.id !== "lotCameraInput" &&
-          el.id !== "preview" &&
-          el.id !== "pushPreview"
+          el.id !== "preview"
         ){
           el.addEventListener("input", () => {
             recalc();
@@ -1839,34 +1685,6 @@
           triggerHaptic("success");
         } else {
           setStatus("Copy blocked by browser. Manually copy from the preview box.");
-          showFabStatus("Copy blocked", "warn");
-          triggerHaptic("warning");
-        }
-      });
-
-      document.getElementById("buildPush").addEventListener("click", () => {
-        const pushData = buildPushData();
-        const pushText = buildPushText(pushData);
-        renderPushList(pushData);
-        pushPreviewEl.value = pushText;
-        setStatus("Push view built.");
-        showFabStatus("Push built", "info");
-        triggerHaptic("light");
-      });
-
-      document.getElementById("copyPushAll").addEventListener("click", async () => {
-        const pushData = buildPushData();
-        const pushText = buildPushText(pushData);
-        renderPushList(pushData);
-        pushPreviewEl.value = pushText;
-
-        const ok = await copyText(pushText);
-        if(ok){
-          setStatus("Push block copied.");
-          showFabStatus("Copied", "success");
-          triggerHaptic("success");
-        } else {
-          setStatus("Copy blocked by browser. Manually copy from the push box.");
           showFabStatus("Copy blocked", "warn");
           triggerHaptic("warning");
         }
