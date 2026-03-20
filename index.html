@@ -315,7 +315,7 @@
 
     .ac-detail-top{
       display:grid;
-      grid-template-columns: 76px minmax(0,1fr) auto auto;
+      grid-template-columns: 76px minmax(0,1fr) 190px 120px;
       gap: 8px;
       align-items:center;
     }
@@ -1249,19 +1249,19 @@
           scheduleAutosave();
         });
 
-        const detailsBtn = document.createElement("button");
-        detailsBtn.type = "button";
-        detailsBtn.className = "ac-btn ac-btn-ghost";
-        detailsBtn.textContent = showExtra ? "Hide Details" : "Add Details";
+        const toggleDetailsBtn = document.createElement("button");
+        toggleDetailsBtn.type = "button";
+        toggleDetailsBtn.className = "ac-btn ac-btn-ghost";
+        toggleDetailsBtn.textContent = "Add/Remove Details";
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "ac-btn ac-btn-ghost";
-        removeBtn.textContent = "Remove";
+        removeBtn.textContent = "Delete Pass";
 
         top.appendChild(badge);
         top.appendChild(dur);
-        top.appendChild(detailsBtn);
+        top.appendChild(toggleDetailsBtn);
         top.appendChild(removeBtn);
 
         const extra = document.createElement("div");
@@ -1287,19 +1287,18 @@
         extra.appendChild(ang);
         extra.appendChild(dep);
 
-        detailsBtn.addEventListener("click", () => {
+        toggleDetailsBtn.addEventListener("click", () => {
           const hidden = extra.classList.contains("ac-hidden");
+
           if(hidden){
             extra.classList.remove("ac-hidden");
-            detailsBtn.textContent = "Hide Details";
             showFabStatus("Details shown", "info", 800);
           } else {
             extra.classList.add("ac-hidden");
-            detailsBtn.textContent = "Add Details";
             ang.value = "";
             dep.value = "";
             scheduleAutosave();
-            showFabStatus("Details hidden", "info", 800);
+            showFabStatus("Details removed", "info", 800);
           }
         });
 
